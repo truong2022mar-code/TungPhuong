@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sora Tool</title>
+
+<style>
+body{margin:0;background:#f2f2f2;font-family:system-ui}
+.phone{max-width:420px;margin:auto;background:#fff;min-height:100vh;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+header{text-align:center;padding:14px}
+#summary{font-weight:900;color:#b30000;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
+button{border:0;border-radius:8px;padding:10px;font-weight:700;color:#fff;cursor:pointer}
+.red{background:#8b0000}
+.blue{background:#0b84ff}
+.label{text-align:center;font-weight:700;padding:10px}
+main{padding:12px}
+.search{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px}
+table{width:100%;border-collapse:collapse}
+td{padding:6px;font-size:14px;border-bottom:1px solid #eee}
+.actions{display:flex;flex-direction:column;gap:4px}
+.dot{width:10px;height:10px;border-radius:50%;background:#ccc}
+.dot.posted{background:green}
+textarea{width:100%;height:70px;border-radius:8px;border:1px solid #ddd;padding:8px}
+.hidden{display:none}
+.hist{max-height:120px;overflow:auto;border:1px dashed #ddd;border-radius:6px;padding:6px}
+</style>
+</head>
+
+<body>
+<div class="phone">
+
+<header>
+  <div id="summary">ĐÃ ĐĂNG 0/201 SẢN PHẨM</div>
+
+  <div class="grid">
+    <button class="red" id="randomBtn">Random Sản phẩm</button>
+    <div class="label" id="currentName">Sản phẩm -</div>
+
+    <button class="blue" id="copyVideo">Copy Link Video</button>
+    <button class="blue" id="importPosted">Nhập SP đã đăng</button>
+
+    <button class="blue" id="copyCaption">Copy Caption</button>
+    <button class="blue" id="copyPosted">Copy SP đã đăng</button>
+
+    <button class="blue" id="copyShopee">Copy Link Shopee</button>
+    <button class="blue" id="toggleHistory">Lịch sử</button>
+
+    <button class="blue" id="toggleCaption">Caption/Tên SP</button>
+    <button class="blue" id="clearHistory">Xóa Lịch sử</button>
+  </div>
+</header>
+
+<main>
+  <div id="captionBox" class="hidden">
+    <textarea id="captionText" readonly></textarea>
+  </div>
+
+  <div id="historyBox" class="hidden">
+    <div class="hist" id="historyList"></div>
+  </div>
+
+  <input class="search" id="search" placeholder="Tìm theo số (#1) hoặc từ khóa">
+
+  <table>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+
+</div>
+
+<script>
+/* ================= DATA ================= */
+const PRODUCTS = [{"id":1,"name":"Bộ 2 SRM Nivea Men bùn khoáng","drive":"https://drive.google.com/file/d/1kTZFMoKR7qbnTiSFXKtYapZq4NyIBAZl/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/7687323153"},{"id":2,"name":"Bộ 2 SRM Nivea Men bùn khoáng","drive":"https://drive.google.com/file/d/1GEYo2vyQeOEbMnZvyOxVxCRwAEQoxbkk/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/7687323153"},{"id":3,"name":"Bộ 2 SRM Nivea Men bùn khoáng","drive":"https://drive.google.com/file/d/1E5-C_p9_vZXVQ6-TCnBfW-7EqCHhP4rm/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/7687323153"},{"id":4,"name":"Bộ 2 SRM Nivea Men bùn khoáng","drive":"https://drive.google.com/file/d/1N5QtjqFbwZlSk75h8-KH92cB6301QILf/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/7687323153"},{"id":5,"name":"Bộ 2 SRM Nivea Men bùn khoáng","drive":"https://drive.google.com/file/d/1Xwv8Hn9Qpu5dxk7N49uNU47LD2wLVs61/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/7687323153"},{"id":6,"name":"Mặt nạ ngủ môi Laneige 20g","drive":"https://drive.google.com/file/d/1Nn1SyI3rVy_zGqQuwyPVGiF_bIA2cHWi/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2278111046"},{"id":7,"name":"Mặt nạ ngủ môi Laneige 20g","drive":"https://drive.google.com/file/d/1iktqFYp7Jfc5R2Huv1Y5RK4nm2ZfIAyW/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2278111046"},{"id":8,"name":"Mặt nạ ngủ môi Laneige 20g","drive":"https://drive.google.com/file/d/1D1CJH-41ZD-aoZiLuOJuvIbIbbcoVb12/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2278111046"},{"id":9,"name":"Mặt nạ ngủ môi Laneige 20g","drive":"https://drive.google.com/file/d/1w1d-VjPYA0eNHRNo0-FC150hVp3Xsten/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2278111046"},{"id":10,"name":"Mặt nạ ngủ môi Laneige 20g","drive":"https://drive.google.com/file/d/1fViemHGKkEqTKXOK2AC7NobrwdxLBZ4v/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2278111046"},{"id":11,"name":"Serum dưỡng thể chống nắng Nivea Super C+","drive":"https://drive.google.com/file/d/1WjYYBH_AEKBE4oZWcu2gUUTW22FPJfXR/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/14074352796"},{"id":12,"name":"Serum dưỡng thể chống nắng Nivea Super C+","drive":"https://drive.google.com/file/d/1W8tQTAtcHRpZvTEE1C2gtxfUX4S-aSxI/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/14074352796"},{"id":13,"name":"Serum dưỡng thể chống nắng Nivea Super C+","drive":"https://drive.google.com/file/d/1ooKQlEk2TJo0zyim0qMhBIvaxBYuQY7N/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/14074352796"},{"id":14,"name":"Serum dưỡng thể chống nắng Nivea Super C+","drive":"https://drive.google.com/file/d/1B1Xy2hfov51xeBLn6ufvOU4euHdyn5XA/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/14074352796"},{"id":15,"name":"Serum dưỡng thể chống nắng Nivea Super C+","drive":"https://drive.google.com/file/d/1I3pX8G0Gju954-oYJ0JaQRizYWJs-vlu/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/14074352796"},{"id":16,"name":"Mặt nạ ngủ Laneige Cica phục hồi 60ml","drive":"https://drive.google.com/file/d/1iOdOal6xZ6spi3C-2Yg8OxNVkE4tU_Xv/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/9704054391"},{"id":17,"name":"Mặt nạ ngủ Laneige Cica phục hồi 60ml","drive":"https://drive.google.com/file/d/176UlQU7EXBNPWcyk99iUBpQ_X16IAoV_/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/9704054391"},{"id":18,"name":"Mặt nạ ngủ Laneige Cica phục hồi 60ml","drive":"https://drive.google.com/file/d/1mV0Qa1fePJV1FdDhrxGVPhVUM3S5n-HZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/9704054391"},{"id":19,"name":"Mặt nạ ngủ Laneige Cica phục hồi 60ml","drive":"https://drive.google.com/file/d/1oxVx_Q21rtMg_S__JXDLlK3c6XpMkNP7/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/9704054391"},{"id":20,"name":"Mặt nạ ngủ Laneige Cica phục hồi 60ml","drive":"https://drive.google.com/file/d/1szsfnfel485H3xpeDRYP1Jzz19npTjRP/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/9704054391"},{"id":21,"name":"Bộ 3 lăn khử mùi Nivea Comfort","drive":"https://drive.google.com/file/d/1WfHV3ekm5rannD1Eg-FZ-2dNGsysricu/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25633547240"},{"id":22,"name":"Bộ 3 lăn khử mùi Nivea Comfort","drive":"https://drive.google.com/file/d/1XX8ibIkKEBdSc9PJ8gEDRVRnpG2C0_vm/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25633547240"},{"id":23,"name":"Bộ 3 lăn khử mùi Nivea Comfort","drive":"https://drive.google.com/file/d/13Oxa7triGxse1n5XlEJDMY27L7NijKZZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25633547240"},{"id":24,"name":"Bộ 3 lăn khử mùi Nivea Comfort","drive":"https://drive.google.com/file/d/1_B3o4mi64KeN625ilH0sKVdcNYdIRPoz/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25633547240"},{"id":25,"name":"Bộ 3 lăn khử mùi Nivea Comfort","drive":"https://drive.google.com/file/d/1sDFFFjf3aERFOtKgCHqR8nNl5xlEt8b-/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25633547240"},{"id":26,"name":"Son bùn Lemonade Perfect Couple Blurry Stain","drive":"https://drive.google.com/file/d/1UAag0eIRtObv5CBBKMp_G1--53Zm7ehD/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/41067329628"},{"id":27,"name":"Son bùn Lemonade Perfect Couple Blurry Stain","drive":"https://drive.google.com/file/d/1AO1PgAq7pY2jUNZHNuClO-T__MKGcigr/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/41067329628"},{"id":28,"name":"Son bùn Lemonade Perfect Couple Blurry Stain","drive":"https://drive.google.com/file/d/1NpDQd96Wrg6I_uPvJ1kUuYniVuFc49Co/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/41067329628"},{"id":29,"name":"Son bùn Lemonade Perfect Couple Blurry Stain","drive":"https://drive.google.com/file/d/1-pupOV9uVgeS676ieH3DbBPJqKMc_2SQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/41067329628"},{"id":30,"name":"Son bùn Lemonade Perfect Couple Blurry Stain","drive":"https://drive.google.com/file/d/154qtl86Ow6hc4YR29dxJ8k-8thCXprdL/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/41067329628"},{"id":31,"name":"Mặt nạ ngủ môi Laneige Berry 20g","drive":"https://drive.google.com/file/d/1wjkVtfnEzpr3JVSK1mUVIspPprR66E2P/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18185953761"},{"id":32,"name":"Mặt nạ ngủ môi Laneige Berry 20g","drive":"https://drive.google.com/file/d/1xn_RXSnK2OrBB3yZ3P8gZTnPY3O2wDEd/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18185953761"},{"id":33,"name":"Mặt nạ ngủ môi Laneige Berry 20g","drive":"https://drive.google.com/file/d/1Hw2554L-W9Z2gGXaWhAxF9QGI1bPc_VC/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18185953761"},{"id":34,"name":"Mặt nạ ngủ môi Laneige Berry 20g","drive":"https://drive.google.com/file/d/1sMiKWJl0m-hSWUFBwLJ2jjJN4WwYdMrE/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18185953761"},{"id":35,"name":"Mặt nạ ngủ môi Laneige Berry 20g","drive":"https://drive.google.com/file/d/1EIOuRXYI8vqgh07AMGJQLsuLrrEczwfM/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18185953761"},{"id":36,"name":"Kem dưỡng trắng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1qdwHdQaSOlPA8U750FxrO0PfsrVBjhvi/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/4397706066"},{"id":37,"name":"Kem dưỡng trắng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1lAakZ2aSkeQfRwVXPWpI9xUSvSqYvNfb/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/4397706066"},{"id":38,"name":"Kem dưỡng trắng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/14Qb-RJ_PXH6LuIBBsuZE7xcZ_b5FJJvO/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/4397706066"},{"id":39,"name":"Kem dưỡng trắng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1ueIimcCT-5nFY7YO30-7d5pF72ZXkuMp/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/4397706066"},{"id":40,"name":"Kem dưỡng trắng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1eZE1VCm0ycfb6Djpz-TFH9xdMq2yOqOv/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/4397706066"},{"id":41,"name":"Mascara Lemonade Soaring làm dài mi","drive":"https://drive.google.com/file/d/12iot6DUZ4J1EJmUGWU_MCD1FXn347Bv4/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/23469469888"},{"id":42,"name":"Mascara Lemonade Soaring làm dài mi","drive":"https://drive.google.com/file/d/1DrhYjlMGOsu6kLrEpWGcr0ByVhewP2KC/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/23469469888"},{"id":43,"name":"Mascara Lemonade Soaring làm dài mi","drive":"https://drive.google.com/file/d/1JadPgF5uo27Ex9J2HshGyVyfxBcIWIld/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/23469469888"},{"id":44,"name":"Mascara Lemonade Soaring làm dài mi","drive":"https://drive.google.com/file/d/1wF8A5vOTLxU4IsVofuPD39KJcGaZ5UGj/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/23469469888"},{"id":45,"name":"Mascara Lemonade Soaring làm dài mi","drive":"https://drive.google.com/file/d/1p3ZKEfw6-jKcvosbx9KP06SL3BF-bsr6/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/23469469888"},{"id":46,"name":"Băng đô màu hồng Laneige (Quà tặng)","drive":"https://drive.google.com/file/d/1TD2jGervbM7x_EMFvGWO89aTeYTLKQRX/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/49300529408"},{"id":47,"name":"Băng đô màu hồng Laneige (Quà tặng)","drive":"https://drive.google.com/file/d/1ys-EbR_uJ4YiOL3cWIz2AJ8tr3-oWByp/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/49300529408"},{"id":48,"name":"Băng đô màu hồng Laneige (Quà tặng)","drive":"https://drive.google.com/file/d/1zgvsgo25AqRSbChphWdWETJrymoQM1rQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/49300529408"},{"id":49,"name":"Băng đô màu hồng Laneige (Quà tặng)","drive":"https://drive.google.com/file/d/1E9Zf1CcCdEyKMw07GQ_Z7mfbhK8bEzk9/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/49300529408"},{"id":50,"name":"Băng đô màu hồng Laneige (Quà tặng)","drive":"https://drive.google.com/file/d/19Lls2CUftfZIIoeY5jRv1NmzOtVFlXZb/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/49300529408"},{"id":51,"name":"Bộ 2 SRM Laneige Water Bank 150g","drive":"https://drive.google.com/file/d/1YjlreoXW6B61qusueN6kOOvCJw72RP14/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/22247586987"},{"id":52,"name":"Bộ 2 SRM Laneige Water Bank 150g","drive":"https://drive.google.com/file/d/1JLQmyjLHGmw0o7cUZxFXYHMRwOE06nf8/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/22247586987"},{"id":53,"name":"Bộ 2 SRM Laneige Water Bank 150g","drive":"https://drive.google.com/file/d/1Om3qlygVAlZMxW3nHD9_K2hHPb7vXEfa/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/22247586987"},{"id":54,"name":"Bộ 2 SRM Laneige Water Bank 150g","drive":"https://drive.google.com/file/d/1BpOhBVZUb3yz9yOVeAKCXbRUwyV2dTiS/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/22247586987"},{"id":55,"name":"Bộ 2 SRM Laneige Water Bank 150g","drive":"https://drive.google.com/file/d/1cATsxfmviAc1F2RsEIL2mWIYsuOgZ9zr/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/22247586987"},{"id":56,"name":"Son kem lì Lemonade Perfect Couple 3.5g","drive":"https://drive.google.com/file/d/1X3CllHgNNg_uWvSJJJ-ZUFMcoIKiNLrs/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21193341341"},{"id":57,"name":"Son kem lì Lemonade Perfect Couple 3.5g","drive":"https://drive.google.com/file/d/1AY04CifL0Z3AKt5p5gR6tz_6KUaMDD6J/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21193341341"},{"id":58,"name":"Son kem lì Lemonade Perfect Couple 3.5g","drive":"https://drive.google.com/file/d/1efm8XZ4axhrMoVrjM6PBBd7nd8XfBZb0/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21193341341"},{"id":59,"name":"Son kem lì Lemonade Perfect Couple 3.5g","drive":"https://drive.google.com/file/d/1V0r_qguZo9N4k0XmsGXYM_RQLVPulRfJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21193341341"},{"id":60,"name":"Son kem lì Lemonade Perfect Couple 3.5g","drive":"https://drive.google.com/file/d/1giM1jsFv0AgTSehrSK_mvut9RTTUeA-Y/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21193341341"},{"id":61,"name":"Má kem lì Lemonade Perfect Couple 8.5g","drive":"https://drive.google.com/file/d/1EsmCvwqXgGP_cU57CUzr3Rib8pw4HftZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/18784466568"},{"id":62,"name":"Má kem lì Lemonade Perfect Couple 8.5g","drive":"https://drive.google.com/file/d/1-A3sD59llfmVqXrFnrIZNOnlwvX6hjsX/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/18784466568"},{"id":63,"name":"Má kem lì Lemonade Perfect Couple 8.5g","drive":"https://drive.google.com/file/d/1XPhE18bqtEBYxVMf0WWyRzztlDhE_UK2/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/18784466568"},{"id":64,"name":"Má kem lì Lemonade Perfect Couple 8.5g","drive":"https://drive.google.com/file/d/1C0UmqPp6uPoszN2_f0HRbP_SzEVycEQA/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/18784466568"},{"id":65,"name":"Má kem lì Lemonade Perfect Couple 8.5g","drive":"https://drive.google.com/file/d/1Ls-4ILTRRiplXvVNqo4J5UKpaxLR0iyO/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/18784466568"},{"id":66,"name":"Bộ 2 mặt nạ ngủ môi Laneige 3g","drive":"https://drive.google.com/file/d/117FUis8MuAMtFjcfS5SZEouCNGLetstG/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/11393424067"},{"id":67,"name":"Bộ 2 mặt nạ ngủ môi Laneige 3g","drive":"https://drive.google.com/file/d/18s3jfqU-tBqLd_2MTH5ogxqicpunt6d9/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/11393424067"},{"id":68,"name":"Bộ 2 mặt nạ ngủ môi Laneige 3g","drive":"https://drive.google.com/file/d/1MmB5q4-CM1E8sx0u_wM1cswRICsyNbeS/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/11393424067"},{"id":69,"name":"Bộ 2 mặt nạ ngủ môi Laneige 3g","drive":"https://drive.google.com/file/d/105EvxHJ8GTw2ulPjn1GmlqbcIpKkeiS5/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/11393424067"},{"id":70,"name":"Bộ 2 mặt nạ ngủ môi Laneige 3g","drive":"https://drive.google.com/file/d/1MJutK50FhZIAzsSBY_8KaJXx3oBcXZvK/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/11393424067"},{"id":71,"name":"Combo Phấn nước Lemonade Supermatte và Son","drive":"https://drive.google.com/file/d/1mOr-rFPpR5XTH4F0kJKuutoSuemG8zGI/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/43357155403"},{"id":72,"name":"Combo Phấn nước Lemonade Supermatte và Son","drive":"https://drive.google.com/file/d/1QOfRmW7CzVHnd30So6wIUX05FB7oex8U/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/43357155403"},{"id":73,"name":"Combo Phấn nước Lemonade Supermatte và Son","drive":"https://drive.google.com/file/d/1ev_B0GkbEuYYmARv1qK7kbfZMloS9U9K/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/43357155403"},{"id":74,"name":"Combo Phấn nước Lemonade Supermatte và Son","drive":"https://drive.google.com/file/d/1DnbjsTy9937CSxU7C1iLfcCkuwcZIh4g/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/43357155403"},{"id":75,"name":"Combo Phấn nước Lemonade Supermatte và Son","drive":"https://drive.google.com/file/d/1ItzAD7zYnjN6RKTOF15RHG5Hx1fwV-7V/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/43357155403"},{"id":76,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1Pbv5PtoBQhZEh33ehdcH9BIfqWqY1jvO/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/12935211489"},{"id":77,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1WiQaTdlFCx6C-s1baonyTiiKfYsn0dDt/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/12935211489"},{"id":78,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1aInI3xIFGjgByp5RCtgkO4SBAVWouzxH/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/12935211489"},{"id":79,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1famXJ0k-7Iiyug1ZxKozSaemhseHcJ4E/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/12935211489"},{"id":80,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1dtvUyry1zSnIYR0ZGE6lrenJaat5uVNn/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/12935211489"},{"id":81,"name":"Xịt khử mùi Nivea dưỡng sáng 150ml","drive":"https://drive.google.com/file/d/1uvrxJPQU805pAvboRXnbG58Bvb-wG9IS/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25321493140"},{"id":82,"name":"Xịt khử mùi Nivea dưỡng sáng 150ml","drive":"https://drive.google.com/file/d/1xGkH_HCAaFI8_9qO8XVhBTNxwoIfl1oG/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25321493140"},{"id":83,"name":"Xịt khử mùi Nivea dưỡng sáng 150ml","drive":"https://drive.google.com/file/d/1KsUEzlZF-xJY2tKYb7LOn285piKJkquG/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25321493140"},{"id":84,"name":"Son kem Lemonade Perfect Couple Lip 3.5g","drive":"https://drive.google.com/file/d/1L41RAD1Np-aUefuvn_O2NeJwF-a28GQ4/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25471121151"},{"id":85,"name":"Son kem Lemonade Perfect Couple Lip 3.5g","drive":"https://drive.google.com/file/d/1yG7ZfMVQIrcvSmfdAGpFDptMyqyGPKMI/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25471121151"},{"id":86,"name":"Son kem Lemonade Perfect Couple Lip 3.5g","drive":"https://drive.google.com/file/d/1SvuPIsSALcak68bfNagMvNYssFILPh2O/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25471121151"},{"id":87,"name":"Son kem Lemonade Perfect Couple Lip 3.5g","drive":"https://drive.google.com/file/d/1btxiDwNTdVP2nqLBZ3ttoiCsWnEExECq/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25471121151"},{"id":88,"name":"Son kem Lemonade Perfect Couple Lip 3.5g","drive":"https://drive.google.com/file/d/11CW3wxPh3P3qTO8VqaK2Xe8z4scklKcs/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25471121151"},{"id":89,"name":"Serum dưỡng ẩm Laneige Water Bank 50ml","drive":"https://drive.google.com/file/d/1BSQVYy631as-gCsTTrXUBae5uLz3fXcM/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/13375783585"},{"id":90,"name":"Serum dưỡng ẩm Laneige Water Bank 50ml","drive":"https://drive.google.com/file/d/1KqeLXyA8ULLu561EU3ygZ8vNfGP9BYhX/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/13375783585"},{"id":91,"name":"Serum dưỡng ẩm Laneige Water Bank 50ml","drive":"https://drive.google.com/file/d/1HwQdebv6hNZ4swSQanhrzzT0VLPCJlLH/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/13375783585"},{"id":92,"name":"Serum dưỡng ẩm Laneige Water Bank 50ml","drive":"https://drive.google.com/file/d/1cUiKXRdd0IEdICu8o8dAkkqOvBEEgPlj/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/13375783585"},{"id":93,"name":"Serum dưỡng ẩm Laneige Water Bank 50ml","drive":"https://drive.google.com/file/d/194XkLLEnWI96WFKdfnsuaxXhrvKJdnfn/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/13375783585"},{"id":94,"name":"Tinh chất Laneige Radian-C 15ml (Quà tặng)","drive":"https://drive.google.com/file/d/1njP9zIpV6SWMbe9yTVyx0l_l9Jtk0F-W/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21304367757"},{"id":95,"name":"Tinh chất Laneige Radian-C 15ml (Quà tặng)","drive":"https://drive.google.com/file/d/16BSPsXNTvYHGdzn14URk1kSTG5zPHg9O/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21304367757"},{"id":96,"name":"Tinh chất Laneige Radian-C 15ml (Quà tặng)","drive":"https://drive.google.com/file/d/17Upf4yuvP6USL8cDlkWnNX0bnE420GAT/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21304367757"},{"id":97,"name":"Tinh chất Laneige Radian-C 15ml (Quà tặng)","drive":"https://drive.google.com/file/d/18sjM-p3bx43sKtyvJczsvTmXkhhG454j/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21304367757"},{"id":98,"name":"Tinh chất Laneige Radian-C 15ml (Quà tặng)","drive":"https://drive.google.com/file/d/1sTsm1iPIIPeCIcsD5KYYcBn8EWnZEynu/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21304367757"},{"id":99,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1EoOqo1RObmy5pQC9g29xBe3LkssBOxIu/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5569757860"},{"id":100,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1xvhD5e245FbPZm32mdCruVofmS5uCdtf/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5569757860"},{"id":101,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1Ybm87Q4fbDelHHfd2npB7YYQuwnFyvLE/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5569757860"},{"id":102,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1VgIldO5lVcCruOkFHMpoBmtsAX63nq7-/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5569757860"},{"id":103,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 70ml","drive":"https://drive.google.com/file/d/1O41LbvOsn4kNg-sY-U3c5m7XEaTprVG9/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5569757860"},{"id":104,"name":"Bộ 2 mặt nạ ngủ Laneige 15ml","drive":"https://drive.google.com/file/d/17QBfMA2MPkHRECLtyxbfJlIZPVnisaLB/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7065965185"},{"id":105,"name":"Bộ 2 mặt nạ ngủ Laneige 15ml","drive":"https://drive.google.com/file/d/1a6qD7UyxSxhRtcFIvAmmZV6taIX3Epkh/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7065965185"},{"id":106,"name":"Bộ 2 mặt nạ ngủ Laneige 15ml","drive":"https://drive.google.com/file/d/1m7uzNMMWs9RnyNpCHQIAQFVFG2Q8ajj_/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7065965185"},{"id":107,"name":"Bộ 2 mặt nạ ngủ Laneige 15ml","drive":"https://drive.google.com/file/d/1K96LLscdkdhqNAICuIOerY97sghp656S/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7065965185"},{"id":108,"name":"Bộ 2 mặt nạ ngủ Laneige 15ml","drive":"https://drive.google.com/file/d/1X_Nh013rMlpkHj4BOgfwDmNglYmo84bJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7065965185"},{"id":109,"name":"Bộ 2 lăn khử mùi Nivea sáng mịn","drive":"https://drive.google.com/file/d/1wiJOmgtxPhjCdZjA2oddOHR1CLzehLwQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/23823667824"},{"id":110,"name":"Bộ 2 lăn khử mùi Nivea sáng mịn","drive":"https://drive.google.com/file/d/19akeFsxTOOspFFyv90iVulok3e3ceNQh/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/23823667824"},{"id":111,"name":"Bộ 2 lăn khử mùi Nivea sáng mịn","drive":"https://drive.google.com/file/d/1lYlhxSnpeV4iFBL0h-LVjYivq1yiHnzw/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/23823667824"},{"id":112,"name":"Bộ 2 lăn khử mùi Nivea sáng mịn","drive":"https://drive.google.com/file/d/1WS5JF6j5EJ2mNMRhBlWqtfzwcxOkFpRR/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/23823667824"},{"id":113,"name":"Bộ 2 lăn khử mùi Nivea sáng mịn","drive":"https://drive.google.com/file/d/1w5QMNVbGa_EJumRn6kvtJ0o_zedu56_O/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/23823667824"},{"id":114,"name":"Bộ 3 xịt khử mùi Nivea 150ml","drive":"https://drive.google.com/file/d/1Faj0J37g2xbS9Fg6nc2F4MxdTScgyWPh/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25721496023"},{"id":115,"name":"Bộ 3 xịt khử mùi Nivea 150ml","drive":"https://drive.google.com/file/d/1rD1DDSiUB_CXd1gdVOORIFq7bfGLlTen/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25721496023"},{"id":116,"name":"Bộ 3 xịt khử mùi Nivea 150ml","drive":"https://drive.google.com/file/d/17IxmeM4P-a1y_KDIjY7Cn3_HuImtvpsX/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25721496023"},{"id":117,"name":"Bộ 3 xịt khử mùi Nivea 150ml","drive":"https://drive.google.com/file/d/1q9fs9IoYHtqnZID5TeEr5urjXBUZiJxR/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25721496023"},{"id":118,"name":"Bộ 3 xịt khử mùi Nivea 150ml","drive":"https://drive.google.com/file/d/1ic0loHVSdstUZOkzH23lTk45Zp4ak3mk/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/25721496023"},{"id":119,"name":"Lõi kem dưỡng Laneige Water Bank Gel","drive":"https://drive.google.com/file/d/15ksXRbSyMvEBrN5lHI1wkl3MmNKhb_pO/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/25623186168"},{"id":120,"name":"Lõi kem dưỡng Laneige Water Bank Gel","drive":"https://drive.google.com/file/d/1z7tzg8dThTDOBtRTHPPGHqBq0MyNt2a2/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/25623186168"},{"id":121,"name":"Lõi kem dưỡng Laneige Water Bank Gel","drive":"https://drive.google.com/file/d/1Ut4MULTngqM024gLQDxl_pzZIr9of6Sb/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/25623186168"},{"id":122,"name":"Lõi kem dưỡng Laneige Water Bank Gel","drive":"https://drive.google.com/file/d/1iBKBxsYMj3t34Myv7w6R8vulwMmRjUhX/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/25623186168"},{"id":123,"name":"Lõi kem dưỡng Laneige Water Bank Gel","drive":"https://drive.google.com/file/d/1J80WUrvG-S2x-XMw7qU8imzmpJtCOwgd/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/25623186168"},{"id":124,"name":"Tinh chất sáng da Laneige Radian-C 150ml","drive":"https://drive.google.com/file/d/1Ugq8FsZNlb8MiYK69x10K1r8rnp_ESDU/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18903935969"},{"id":125,"name":"Tinh chất sáng da Laneige Radian-C 150ml","drive":"https://drive.google.com/file/d/1T-fKhvWvFxKOu6omMTeGS2mW-g4Ilutm/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18903935969"},{"id":126,"name":"Tinh chất sáng da Laneige Radian-C 150ml","drive":"https://drive.google.com/file/d/1cvtc9dyI-M-DvI37ZCWN5kt8RLoUdyQ2/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18903935969"},{"id":127,"name":"Tinh chất sáng da Laneige Radian-C 150ml","drive":"https://drive.google.com/file/d/1jrkaVixTbqKJAkFrJijPgH0BxET3FYHh/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18903935969"},{"id":128,"name":"Tinh chất sáng da Laneige Radian-C 150ml","drive":"https://drive.google.com/file/d/1UinlhC-sHUBIkTztGzzYUotGF9NK-pKY/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/18903935969"},{"id":129,"name":"Bảng mắt Lemonade Aesthetic Palette Ver 2","drive":"https://drive.google.com/file/d/1fuEBvpF5jxJHvTgYb4OC0DVwFYq9PCHX/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/22062701919"},{"id":130,"name":"Bảng mắt Lemonade Aesthetic Palette Ver 2","drive":"https://drive.google.com/file/d/1_-yyFuPJasoPBRUFuUVh0n40y10eA9cW/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/22062701919"},{"id":131,"name":"Bảng mắt Lemonade Aesthetic Palette Ver 2","drive":"https://drive.google.com/file/d/1MiQanXVe7k3OULpwos-vQ3aZJDELQaLN/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/22062701919"},{"id":132,"name":"Kem dưỡng sáng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1KcPq6udESKzTi6TDvh53qQkqrhLA5fVI/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5123516530"},{"id":133,"name":"Kem dưỡng sáng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1pl8VJcGmu6nwzPhQToiQEe6b3pPtgnaf/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5123516530"},{"id":134,"name":"Kem dưỡng sáng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1X7Zsg5AXsU8xxrIsZudbWiSxQ8fNJIsg/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5123516530"},{"id":135,"name":"Kem dưỡng sáng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1YcRZ3ajN0xgSEJQJNZIHckoHY1KulFnU/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5123516530"},{"id":136,"name":"Kem dưỡng sáng da Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1xoMWRDtQlgUhSv7EgHkpp9wEIeUXASrB/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/5123516530"},{"id":137,"name":"Kem lót Laneige Skin Veil Base Tím","drive":"https://drive.google.com/file/d/1XkoOtiUmTB3GHhylZC7Hz0BZjxt3qeYJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19872753468"},{"id":138,"name":"Kem lót Laneige Skin Veil Base Tím","drive":"https://drive.google.com/file/d/1EW2rYNbs3wNHfEf5_-LsMdQGBOnHpuhs/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19872753468"},{"id":139,"name":"Kem lót Laneige Skin Veil Base Tím","drive":"https://drive.google.com/file/d/1pdVDhn-OQ2Hjo2VrZoz_mRhc3s02VSep/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19872753468"},{"id":140,"name":"Kem lót Laneige Skin Veil Base Tím","drive":"https://drive.google.com/file/d/1GpKsXlxppevdPoUUPZ9caLxvCkEC-33I/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19872753468"},{"id":141,"name":"Kem lót Laneige Skin Veil Base Tím","drive":"https://drive.google.com/file/d/1biAhz8jhUy6VMrh0c-dEWIX64gK8Vlku/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19872753468"},{"id":142,"name":"Nước hoa hồng Nivea dưỡng sáng 200ml","drive":"https://drive.google.com/file/d/1gig27DihwANCDbtX50pnGCA3z2gZrVOI/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/1077705631"},{"id":143,"name":"Nước hoa hồng Nivea dưỡng sáng 200ml","drive":"https://drive.google.com/file/d/1wYeadIP36vdf6_j2wY6aHH_spcnW5Fbb/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/1077705631"},{"id":144,"name":"Nước hoa hồng Nivea dưỡng sáng 200ml","drive":"https://drive.google.com/file/d/1GAMpaGZKepaBX12QAuNTGMD38cRrhoSg/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/1077705631"},{"id":145,"name":"Nước hoa hồng Nivea dưỡng sáng 200ml","drive":"https://drive.google.com/file/d/1nQoqul2LiWwO9datUx4Zg1mQIw_VDUVH/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/1077705631"},{"id":146,"name":"Nước hoa hồng Nivea dưỡng sáng 200ml","drive":"https://drive.google.com/file/d/1HBfsJUUiCQvEGWP6TSpJkAJ3fn9nfp6o/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/1077705631"},{"id":147,"name":"Chì kẻ mày Lemonade Micro Eyebrow","drive":"https://drive.google.com/file/d/1JFnOt32CCetSRz_cinM4M4hZMiRU2GvC/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/26513961007"},{"id":148,"name":"Chì kẻ mày Lemonade Micro Eyebrow","drive":"https://drive.google.com/file/d/1XXoq1LEJuu61wDHQUniid9ufdfhws_WL/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/26513961007"},{"id":149,"name":"Chì kẻ mày Lemonade Micro Eyebrow","drive":"https://drive.google.com/file/d/1utwdwoNW3drVlWhsIuetfMU_kAR1Ty-P/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/26513961007"},{"id":150,"name":"Chì kẻ mày Lemonade Micro Eyebrow","drive":"https://drive.google.com/file/d/1IraWUg_ZU9b3OMpNwVk8kNVUHpmNTPyJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/26513961007"},{"id":151,"name":"Chì kẻ mày Lemonade Micro Eyebrow","drive":"https://drive.google.com/file/d/1pW948iGYqOKmarWVMz_0DVhJCLryB1Cg/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/26513961007"},{"id":152,"name":"Kem dưỡng Laneige Water Bank Gel da dầu","drive":"https://drive.google.com/file/d/1lhSwmJ_e99DrE3xmLfOPtX-7QLNNkJ4m/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/15550112820"},{"id":153,"name":"Kem dưỡng Laneige Water Bank Gel da dầu","drive":"https://drive.google.com/file/d/1_Y6PZlJ0S3x1yp7L4B3Lv4l9m9sawJf2/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/15550112820"},{"id":154,"name":"Kem dưỡng Laneige Water Bank Gel da dầu","drive":"https://drive.google.com/file/d/1R-qdQiz2Dgngt16A2rkXzTBKc0jQpPdO/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/15550112820"},{"id":155,"name":"Kem dưỡng Laneige Water Bank Gel da dầu","drive":"https://drive.google.com/file/d/17dR8Iuvr_LwZckmAPFeB4L0nrNj0P14M/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/15550112820"},{"id":156,"name":"Kem dưỡng Laneige Water Bank Gel da dầu","drive":"https://drive.google.com/file/d/1KI9h93iSgnWNzO_vcXoMcPRpWgwz4rHH/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/15550112820"},{"id":157,"name":"Bộ 2 KCN Laneige Radian-C 10ml","drive":"https://drive.google.com/file/d/1JCe3XzA0mDRI2WfPsWep_Bo-7QhBJBdf/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21380804915"},{"id":158,"name":"Bộ 2 KCN Laneige Radian-C 10ml","drive":"https://drive.google.com/file/d/1TZ-jVrLnJjl7eBW7WlSZ2MuPM2zILzNA/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21380804915"},{"id":159,"name":"Bộ 2 KCN Laneige Radian-C 10ml","drive":"https://drive.google.com/file/d/1Lt-IBWgZEFW_kxnM2322W1ELdPWkPJwd/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21380804915"},{"id":160,"name":"Bộ 2 KCN Laneige Radian-C 10ml","drive":"https://drive.google.com/file/d/1RwQRipgVkUGyYdTfQvvskKTzEJxTpQgU/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21380804915"},{"id":161,"name":"Bộ 2 KCN Laneige Radian-C 10ml","drive":"https://drive.google.com/file/d/1jdvUMZ-DxqNJMjDai2aTzkLeC-_Mju6m/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/21380804915"},{"id":162,"name":"Nước tẩy trang Nivea Acne Care 400ml","drive":"https://drive.google.com/file/d/1xSIJR48fmMfgfzaVqT0jQIuRLHSZIb-8/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/8109187038"},{"id":163,"name":"Nước tẩy trang Nivea Acne Care 400ml","drive":"https://drive.google.com/file/d/15vQYCK1bIJtQnwFikNgTAuH0cPkjVL9i/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/8109187038"},{"id":164,"name":"Nước tẩy trang Nivea Acne Care 400ml","drive":"https://drive.google.com/file/d/1wBi_FmjtlHLvbeNfYzRigT_JPdCAgw_Y/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/8109187038"},{"id":165,"name":"Nước tẩy trang Nivea Acne Care 400ml","drive":"https://drive.google.com/file/d/1P2sCQIkUcC2kk6jmeuo-vQckNgZw1L6l/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/8109187038"},{"id":166,"name":"Nước tẩy trang Nivea Acne Care 400ml","drive":"https://drive.google.com/file/d/19NOfTZArrUUOiXvWJQVk8OXFPe8htOOT/view?usp=drivesdk","shopee":"https://shopee.vn/product/61922582/8109187038"},{"id":167,"name":"Son lót môi Lemonade Lip Filler","drive":"https://drive.google.com/file/d/1jEtS3hcj4raPB_WdbMy-r36Zz3Qkh6Bj/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21192289767"},{"id":168,"name":"Son lót môi Lemonade Lip Filler","drive":"https://drive.google.com/file/d/1JG_T-mizr83s87awGqllDaroiz5Pg2e4/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21192289767"},{"id":169,"name":"Son lót môi Lemonade Lip Filler","drive":"https://drive.google.com/file/d/1XzauFn5C-5WBJ_9WFtXVQz_AmbO4Iun_/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21192289767"},{"id":170,"name":"Son lót môi Lemonade Lip Filler","drive":"https://drive.google.com/file/d/1y8_CA-kYHFmP3D9dWFnxCsLLkL63WhJl/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21192289767"},{"id":171,"name":"Son lót môi Lemonade Lip Filler","drive":"https://drive.google.com/file/d/15ueu9ok_0LavkE4XmJE9Du0FdMjSQtep/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/21192289767"},{"id":172,"name":"Má hồng phấn nước Lemonade Mirror Mirror","drive":"https://drive.google.com/file/d/1m8T294_EgcWSHEPlNBqWmIoJ-6fwMWKV/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25787947915"},{"id":173,"name":"Má hồng phấn nước Lemonade Mirror Mirror","drive":"https://drive.google.com/file/d/158V4yibIamL5jxada0YbgWGkJlv586RU/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25787947915"},{"id":174,"name":"Má hồng phấn nước Lemonade Mirror Mirror","drive":"https://drive.google.com/file/d/1Y-4ijVPKspqg_0yHDvC70HRtBrbmEgMx/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25787947915"},{"id":175,"name":"Má hồng phấn nước Lemonade Mirror Mirror","drive":"https://drive.google.com/file/d/1i2qLt1B2sgf-Zk5juyJKWbuRbC7paAmO/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25787947915"},{"id":176,"name":"Má hồng phấn nước Lemonade Mirror Mirror","drive":"https://drive.google.com/file/d/1K2rh-rc3WI-W3uuYrgLf6zgAnDuPuEdw/view?usp=drivesdk","shopee":"https://shopee.vn/product/99553806/25787947915"},{"id":177,"name":"Kem chống nắng Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1uhlkbKZPhaOMIwMqsvh_IWGd7OLIhKfY/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19003934197"},{"id":178,"name":"Kem chống nắng Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1_hMwgtI0OZ3Qf5IBib-96lhz_Wf2WRbB/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19003934197"},{"id":179,"name":"Kem chống nắng Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/11ni0-RP86nxmNuT6TJnag9x4V6KekS9d/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19003934197"},{"id":180,"name":"Kem chống nắng Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/113pFadzup6kp15g5YWc28pWyhCxjk9Kf/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19003934197"},{"id":181,"name":"Kem chống nắng Laneige Radian-C 50ml","drive":"https://drive.google.com/file/d/1e0VHnqNv2Ed6J0GafVJ4pAg4k1DNTg8s/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/19003934197"},{"id":182,"name":"Phấn nước Laneige Neo Cushion Glow (Kèm lõi)","drive":"https://drive.google.com/file/d/14Dp85HDd0xLGdZoUYlM3jd2vXyfVs0gn/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7346262424"},{"id":183,"name":"Phấn nước Laneige Neo Cushion Glow (Kèm lõi)","drive":"https://drive.google.com/file/d/128-5tgk3nN8eywj2lglbpbllFDGUTvEr/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7346262424"},{"id":184,"name":"Phấn nước Laneige Neo Cushion Glow (Kèm lõi)","drive":"https://drive.google.com/file/d/10ujtl8u9VFW_KpZdAqvzpmiS0JVJTnlM/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7346262424"},{"id":185,"name":"Phấn nước Laneige Neo Cushion Glow (Kèm lõi)","drive":"https://drive.google.com/file/d/1gBcsI2lvHNHpZ_FGfN3tNqXhLEnBKnVN/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7346262424"},{"id":186,"name":"Phấn nước Laneige Neo Cushion Glow (Kèm lõi)","drive":"https://drive.google.com/file/d/1_Ba2gIFY-dktYoTxD4d3dgRstBels9RF/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/7346262424"},{"id":187,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 25ml","drive":"https://drive.google.com/file/d/1so-5YbEwyv-F8qQKFdj7kv1F356v42e2/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/6269765079"},{"id":188,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 25ml","drive":"https://drive.google.com/file/d/1Tci_UeqJMhtz0AZIq1jRlRT3JgqIohLn/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/6269765079"},{"id":189,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 25ml","drive":"https://drive.google.com/file/d/1EXITXlWdlVn9ZdIL2WdIzF3UCmOS9uwH/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/6269765079"},{"id":190,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 25ml","drive":"https://drive.google.com/file/d/1GxbLDXo7Fhe__e2p_CrPj24EJvb9BOOj/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/6269765079"},{"id":191,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 25ml","drive":"https://drive.google.com/file/d/1zYJa9fchCSqt6V2-PAUJdec7Pe8IjA7H/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/6269765079"},{"id":192,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 15ml","drive":"https://drive.google.com/file/d/1rLQSmk3R7RtDpXH9VHW9vINvzbrDkLNT/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2590411981"},{"id":193,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 15ml","drive":"https://drive.google.com/file/d/1_3BZobFnOdEtbJUkqfknm0A4yQjxARI2/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2590411981"},{"id":194,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 15ml","drive":"https://drive.google.com/file/d/1a9InxiuzkVJP6despgxVekRrJtxI7K_W/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2590411981"},{"id":195,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 15ml","drive":"https://drive.google.com/file/d/1NJhlEk8TrANFD6c2Whav82ifrQg02snN/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2590411981"},{"id":196,"name":"Mặt nạ ngủ Laneige Water Sleeping Mask 15ml","drive":"https://drive.google.com/file/d/19l525-lDLE_skDZC4_Y7eWEmcMqi-ziF/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/2590411981"},{"id":197,"name":"Sữa rửa mặt Laneige Water Bank 30g","drive":"https://drive.google.com/file/d/1nAyMqRFxCDN0r9p1OOLdqBOulKTjN3n_/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/14950469172"},{"id":198,"name":"Sữa rửa mặt Laneige Water Bank 30g","drive":"https://drive.google.com/file/d/1jCD6sos_PVmioyGc9aT_6UwGF-3uTQXY/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/14950469172"},{"id":199,"name":"Sữa rửa mặt Laneige Water Bank 30g","drive":"https://drive.google.com/file/d/1bj7LLAzq_XWR1VKh8h6SP8B6qor9mYRU/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/14950469172"},{"id":200,"name":"Sữa rửa mặt Laneige Water Bank 30g","drive":"https://drive.google.com/file/d/1EazBaiyKuv9rvWULzi_Zd-Tnqh2KCcbv/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/14950469172"},{"id":201,"name":"Sữa rửa mặt Laneige Water Bank 30g","drive":"https://drive.google.com/file/d/1BVtndHI9yQaeU4CzkQ1I-lp4G7bwyKVU/view?usp=drivesdk","shopee":"https://shopee.vn/product/147191228/14950469172"}];
+let posted = JSON.parse(localStorage.getItem('posted')||'{}');
+let history = JSON.parse(localStorage.getItem('history')||'[]');
+let current = null;
+
+/* ================= CAPTION GENERATOR ================= */
+const captionTemplates = [
+  "Săn sale chính hãng {name} giá tốt",
+  "Deal hời cực sốc {name} chính hãng",
+  "Giá rẻ bất ngờ cho {name} chính hãng",
+  "Giảm sâu số lượng có hạn {name}",
+  "Đừng bỏ lỡ {name} giá cực hời",
+  "Siêu ưu đãi {name} chính hãng hôm nay",
+  "Mua ngay {name} với giá siêu rẻ",
+  "Sản phẩm hot {name} giảm mạnh",
+  "Giá sốc hôm nay cho {name}",
+  "Mua liền tay {name} giá ưu đãi",
+  "Flash sale cực khủng cho {name} chính hãng",
+"Nhanh tay chốt đơn {name} siêu ưu đãi",
+"Mua {name} hôm nay – nhận giá hời liền tay",
+"Cơ hội vàng săn {name} chính hãng giá rẻ",
+"Chớp ngay deal ngon cho {name}",
+"Giảm sốc cực sâu {name} chính hãng hôm nay",
+"Hàng hot {name} đang giảm giá cực mạnh",
+"Đặt nhanh kẻo lỡ {name} giá tốt nhất",
+"Săn ngay {name} chính hãng – deal cực hời",
+"Giá hủy diệt cho {name} chỉ hôm nay",
+"Cực phẩm {name} chính hãng giảm đến 50%",
+"Đại tiệc sale – {name} giá rẻ không tưởng",
+"Sắm liền {name} – ưu đãi đang chờ",
+"Đặc biệt hôm nay: {name} chính hãng siêu sale",
+"Siêu phẩm {name} giá tốt nhất thị trường",
+"Chỉ hôm nay: săn {name} giá sốc không giới hạn",
+"Giảm giá cực đỉnh – {name} chính hãng chờ bạn",
+"Deal ngon bất ngờ cho {name} siêu hot",
+"Cơ hội hiếm có – {name} giá giảm cực sâu",
+"Săn ngay {name} chính hãng – giá mềm bất ngờ",
+"Bắt trend liền tay với {name} chính hãng",
+"Giá ưu đãi đặc biệt cho tín đồ săn sale {name}",
+"Giảm sâu chưa từng có – {name} chờ bạn rinh",
+"Deal ngon khó cưỡng cho {name} chính hãng",
+"Thời điểm vàng để mua {name} giá rẻ",
+"Săn ngay {name} chính hãng – càng mua càng lời",
+"Mở bán cực hot – {name} giảm giá khủng",
+"Không thể tin nổi – {name} giá thấp kỷ lục",
+"Giảm giá cực đại – cơ hội sở hữu {name}",
+"Nhanh tay đặt {name} – ưu đãi giới hạn",
+"Mua {name} hôm nay, nhận quà liền tay",
+"Ưu đãi bùng nổ cho {name} chính hãng",
+"Săn deal nửa giá cho {name} – chỉ hôm nay",
+"Giảm mạnh mừng sale – {name} giá quá hời",
+"Hàng hot {name} – giá chỉ bằng nửa thị trường",
+"Cơ hội cuối cùng sở hữu {name} giá siêu hời",
+"Siêu sale chính hãng {name} – săn ngay kẻo lỡ",
+"Giá tụt sàn cho {name} chính hãng cực chất",
+"Giảm ngay hôm nay – {name} chính hãng giá mềm",
+"Mua {name} bây giờ – nhận ưu đãi khủng liền tay",
+"Chỉ hôm nay: {name} giảm giá cực hấp dẫn",
+"Đừng chần chừ – {name} đang sale cực khủng",
+"Ưu đãi khủng nhất tháng cho {name} chính hãng",
+"Giá giảm chạm đáy – {name} hot nhất hôm nay",
+"Săn deal {name} nhanh tay kẻo hết hàng",
+"Giảm giá khủng – cơ hội sở hữu {name} chính hãng",
+"Hàng xịn {name} giá rẻ bất ngờ, mua ngay!",
+"Chớp cơ hội – {name} chính hãng đang đại hạ giá",
+"Mua liền tay {name}, ưu đãi khủng chờ bạn",
+"Giảm giá chưa từng thấy cho {name}",
+"Deal cực chất – {name} giá siêu ưu đãi",
+"Cực phẩm {name} – giá chỉ bằng 1/2 hôm nay",
+"Nhanh tay rước {name} – giá giảm cực mạnh",
+"Hạ giá toàn sàn – {name} chính hãng giảm sâu",
+"Không thể bỏ qua: {name} đang sale cháy hàng",
+"Giảm giá cực sốc, săn ngay {name} chính hãng",
+"Hàng hot {name} chính hãng, mua sớm lời to",
+"Đặt ngay {name} – deal ngon đang đợi",
+"Cực kỳ hấp dẫn – {name} giá thấp chưa từng",
+"Siêu khuyến mãi {name}, giá chỉ hôm nay thôi!",
+"Giá cực mềm cho {name} – săn ngay kẻo lỡ!",
+"Mua {name} hôm nay, tiết kiệm liền tay",
+"Hàng chính hãng {name} – deal ngon đang đợi",
+"Siêu deal nổ tung – {name} giảm giá ngập tràn",
+"Không mua hôm nay là tiếc – {name} giá rẻ bất ngờ",
+"Cơn mưa ưu đãi đổ bộ – {name} chính hãng giảm mạnh",
+"Deal cực hot – {name} chính hãng giá cực rẻ",
+"Thời gian có hạn – nhanh tay đặt {name}",
+"Săn sale sập sàn với {name} chính hãng",
+"Độc quyền hôm nay – {name} giảm giá siêu sâu",
+"Hàng hot giảm giá – {name} chính hãng giá hời",
+"Giá giảm cực mạnh – mua {name} càng sớm càng lời",
+"Rinh liền tay {name} chính hãng – siêu ưu đãi đang chờ",
+"Cơ hội có một không hai – {name} giảm khủng",
+"Giảm giá cực hot cho fan của {name}",
+"Mở sale toàn sàn – {name} chính hãng giá cực thấp",
+"Giá rẻ bất ngờ, {name} chính hãng chờ bạn săn",
+"Đặt nhanh – {name} chính hãng đang giảm cực sốc",
+"Siêu ưu đãi chỉ 24h – {name} giá hời khó tin",
+"Hàng hot nhất tuần – {name} chính hãng giảm sâu bất ngờ",
+"Săn giá hời cho {name} – cơ hội chỉ có hôm nay",
+"Chốt đơn nhanh tay, {name} đang giảm cực khủng",
+"Giá rẻ đến khó tin – {name} chính hãng đang hot",
+"Ưu đãi cực lớn – {name} chính hãng chờ bạn rước",
+"Deal khủng bất ngờ – {name} sale toàn sàn",
+"Hàng xịn {name} – mua ngay kẻo lỡ cơ hội",
+"Giảm sâu chạm đáy – {name} giá quá hời",
+"Đặt {name} ngay hôm nay, hưởng ưu đãi sốc",
+"Sản phẩm {name} đang giảm giá cực kỳ hấp dẫn",
+"Siêu sale chính hãng – {name} giá rẻ hết nấc",
+"Nhanh tay kẻo hết – {name} đang cháy hàng",
+"Giảm khủng chưa từng có – {name} hot trend 2025",
+"Deal cực hời – {name} chính hãng giá siêu tốt",
+"Giảm giá ngập tràn – {name} chính hãng đồng loạt sale",
+"Giá hời bất ngờ cho fan trung thành của {name}",
+"Mua {name} hôm nay – tiết kiệm cực lớn",
+"Ưu đãi có hạn – {name} giá tốt nhất trong năm",
+"Cực deal đang chờ – {name} giảm giá siêu sâu",
+"Cập bến kho sale – {name} chính hãng giá cực sốc",
+"Mở bát tháng mới với {name} – giá ưu đãi siêu ngon",
+"Chốt deal liền tay – {name} giá mềm chưa từng thấy",
+"Cực phẩm {name} chính hãng – giảm sâu tới bến",
+"Giá ưu đãi chạm sàn – {name} hot nhất hôm nay",
+"Sắm ngay {name}, nhận deal cực lời",
+"Đừng ngó lơ – {name} chính hãng đang giảm cực mạnh",
+"Mua {name} chính hãng hôm nay – giá giảm tới đáy",
+"Deal ngon ngất ngây – {name} giá hời siêu khủng",
+"Chương trình sốc: {name} giảm giá toàn sàn",
+"Cơn bão sale đổ bộ – {name} giá siêu rẻ",
+"Hàng hot {name} – giá cực ưu đãi chỉ trong hôm nay",
+"Cơ hội săn {name} chính hãng với giá cực lời",
+"Săn deal siêu tốc – {name} giảm đến không ngờ",
+"Mua {name} càng sớm, giá càng tốt",
+"Đại hạ giá toàn shop – {name} chính hãng siêu hot",
+"Chỉ còn vài suất ưu đãi cho {name}",
+"Mua ngay {name} – giá tốt bất ngờ đang chờ bạn",
+"Giảm giá sâu nhất tháng – {name} chính hãng siêu ưu đãi",
+"Săn deal vàng cho {name}, tiết kiệm cực lớn",
+"Đặc quyền hôm nay: {name} giảm giá cực hấp dẫn",
+"Giá ngon không tưởng – {name} chính hãng chỉ còn hôm nay",
+"Lướt thấy {name} là auto thả tim ❤️ – giá này mà không chốt thì hơi phí!",
+"Giá mềm như bánh flan 🍮 – {name} chính hãng đang chờ bạn rước!",
+"Đừng để {name} nằm giỏ quá lâu 😭 – sale xong là bay mất đó!",
+"Team săn sale đâu rồi, {name} đang xả hàng kìa 🔥",
+"Nghe nói ai chốt {name} hôm nay là hên cả tuần 😉",
+"Giảm giá sốc quá trời 😱 – {name} chính hãng rẻ như cho!",
+"Giá này không mua {name} là bỏ lỡ chân ái luôn á 😍",
+"Thề luôn, giá {name} này còn rẻ hơn ly trà sữa 🧋",
+"Chậm tay là out game 😤 – {name} chính hãng đang cháy hàng rồi!",
+"Ai chốt nhanh thì lời, ai chần chừ là tiếc 😆 – {name} siêu ưu đãi!",
+"Sale to bằng cái trời 🌤 – {name} chính hãng hạ giá cực mạnh!",
+"Deal ngon hơn người yêu cũ 💔 – {name} giá siêu hời luôn nha!",
+"Không tin nổi luôn 😱 – {name} giảm sâu hơn cả lòng đại dương!",
+"Cảnh báo: {name} đang hot, xem xong là auto muốn mua 😜",
+"Vừa đẹp, vừa rẻ, lại chính hãng – {name} chứ còn ai!",
+"Bấm vào xem thử thôi mà lỡ tay chốt {name} luôn 😅",
+"Mấy anh chị ơi, {name} giảm sốc quá, chậm tay là mất tiêu 🏃‍♀️",
+"Cảnh báo ví mỏng 💸 – {name} giá hời quá khó cưỡng!",
+"Mua {name} hôm nay, mai khỏi hối hận 😎",
+"Giảm giá thật hay mơ vậy trời 😍 – {name} chính hãng siêu rẻ luôn!",
+"Lướt Shopee thấy {name} giảm giá mà tim muốn rớt luôn 😍",
+"Ai đang on Shopee mà chưa chốt {name} là bỏ lỡ deal ngon nha 😜",
+"Mấy chị em ơi, Shopee báo tin vui nè – {name} đang sale siêu to khổng lồ 🎉",
+"Đang tám trên Shopee mà thấy giá {name} vậy là phải dừng tám để chốt đơn liền 🤭",
+"Hàng chính hãng {name} đang hot rần rần trên Shopee luôn đó 🔥",
+"Shopee réo tên bạn rồi kìa 😆 – {name} đang giảm giá cực hời!",
+"Coi chừng lướt Shopee xong auto nghèo vì {name} rẻ quá 😂",
+"Deal nóng hổi vừa thổi vừa mua 😍 – {name} chính hãng trên Shopee",
+"Bỏ qua {name} hôm nay, mai lên Shopee lại tiếc đứt ruột 😭",
+"Ai đang Shopee rảnh tay thì ghé liền, {name} đang sale shock kìa 🔥",
+"Báo động đỏ trên Shopee 🚨 – {name} giảm giá cực mạnh!",
+"Shopee hôm nay nhộn nhịp quá trời, {name} cháy đơn rồi kìa 💥",
+"Không nói nhiều, deal {name} này Shopee phải gọi là ‘đỉnh của chóp’ 🤩",
+"Tag ngay người yêu Shopee vào xem {name}, giá ngon quá nè 😆",
+"Shopee sáng nay toàn thấy người ta khoe chốt {name} 😭 mình chưa kịp mua!",
+"Shopee thông báo: {name} vừa cập bến sale siêu hot 🔥",
+"Cứ mở Shopee là thấy deal ngon – đặc biệt là {name} này luôn nha 💙",
+"Thời tiết nóng mà deal Shopee còn nóng hơn 🥵 – {name} chính hãng giảm cực sâu!",
+"Mấy bạn Shopee đừng ngủ quên, {name} đang cháy hàng rồi đó 🏃‍♀️",
+"Không đùa đâu nha, {name} đang là top trending Shopee luôn á 😍",
+"Trời ơi, hàng {name} em mới về, đẹp xuất sắc luôn 🥰 ai chốt trước em để riêng nè!",
+"Không dám nói quá chứ {name} lần này hot thiệt sự 🔥 chậm tay là hết hàng nha!",
+"Em nói thật, giá {name} này mà không mua là uổng lắm luôn á 😭",
+"Mấy chị ơi, {name} chính hãng em đang sale nè, giá hời quá trời luôn 😍",
+"Tay em run khi thấy giá {name} luôn 🥲 – quá rẻ, chốt nhanh kẻo hết!",
+"Còn đúng vài món {name} thôi đó nha 😭 ai thương thì chốt liền tay giúp em!",
+"Khách quen Shopee nhà em hôm nay ai cũng chốt {name}, còn chị chưa chốt là thiệt đó 😆",
+"Hàng xịn {name} mà giá thì dễ thương lắm nè 💕 nhắn em liền để em giữ cho nha!",
+"Em không nói nhiều, {name} giảm giá thật rồi nha 😱 ai tin nhắn đầu tiên là có deal tốt nhất!",
+"Ai hỏi hoài {name} đâu thì nay em báo tin vui nè 🎉 – hàng về full mẫu luôn!",
+"Chốt {name} sớm đi mấy chị, mai em hết hàng là tiếc lắm đó 😅",
+"Em nói thiệt, deal {name} này ngon hơn người yêu cũ 😜",
+"Shopee nhà em đang cháy đơn vì {name} đó nha, ai chưa chốt thì lẹ lên 💨",
+"Cả Shopee nhà em đang nhộn nhịp vì {name}, ai chưa có là lạc hậu liền 😆",
+"Hàng chính hãng {name}, giá em thương lắm 🥹 chốt sớm em free ship cho luôn!",
+"Mấy anh chị đừng lướt qua, {name} đang sale hời lắm á 😍",
+"Hôm nay em mood đẹp nên giảm thêm cho ai chốt {name} sớm nha 😘",
+"Chỉ còn vài chiếc {name} cuối cùng thôi đó 😭 – ai cần em giữ giùm liền!",
+"Em vừa khui thùng {name}, mùi hàng mới thơm phức luôn 😆 ai chốt thì em quay video gửi liền!",
+"Cảnh báo: {name} nhà em đang cháy đơn 🔥 – ai lỡ tay chậm là đợi chuyến sau luôn nha!",
+"Đừng lướt nữa 😤 – quay lại chốt {name} liền, kẻo mai hết em không cứu được đâu nha!",
+"Cảnh báo cháy đơn 🔥 – ai chưa chốt {name} là auto tiếc luôn á!",
+"Giá này mà không chốt là giận đó nha 😭 – em nói thiệt luôn á!",
+"Mấy anh chị ơi, {name} đang hot hòn họt nè 🔥 chốt nhanh kẻo trễ!",
+"Còn đúng 5 cái {name} thôi đó 😱 – em không dọa đâu, thật luôn á!",
+"Chốt liền tay đi, deal {name} này không lặp lại lần 2 đâu 😜",
+"Em không nói nhiều đâu, ai chốt sớm là lời to luôn 💰",
+"Mấy chị mà lăn tăn là mất liền á 😭 – {name} đang cháy hàng thật sự!",
+"Ai đọc tới đây mà chưa chốt {name} thì gan thiệt đó 😆",
+"Chốt lẹ đi nè, lát em khóa đơn rồi khỏi kêu em giữ nha 😏",
+"Thề luôn, ai chốt {name} hôm nay là lời gấp đôi mai luôn 😎",
+"Không chốt bây giờ, lát thấy 'hết hàng' lại khóc ròng đó 🥹",
+"Nhanh tay kẻo bay, {name} bên em chạy đơn như bay luôn 🚀",
+"Em đang gói hàng {name} mỏi tay luôn 😅 – ai chưa có thì chốt lẹ em giữ cho nha!",
+"Ai chốt đầu tiên em tặng thêm quà xịn luôn 🎁 – nhanh tay nào!",
+"Chốt liền đừng nghĩ nhiều – {name} hot vậy không mua thì tiếc đó 😍",
+"Đừng chờ mai, {name} hôm nay sale cực khủng 😭 – mai là giá khác liền!",
+"Inbox em liền tay nha 💬 – chậm là khỏi còn {name} mà chốt luôn á!",
+"Chốt lẹ giúp em, {name} này bán nhanh như bánh mì nóng luôn 🥐",
+"Chốt càng nhanh, giá càng mềm nha 😜 – {name} chính hãng xịn khỏi bàn!",
+"Còn đúng vài món {name} cuối cùng thôi nha 😭 – ai chưa chốt là mai khóc thật đó!",
+"Đang gói đơn mà tay run luôn 🫣 – {name} bán nhanh quá trời ơi!",
+"Mấy anh chị đừng lăn tăn nữa, {name} này mà hết em không biết tìm đâu ra luôn 😭",
+"Chốt lẹ kẻo hối hận, {name} bên em trôi nhanh hơn người yêu cũ 💨",
+"Thề luôn, deal {name} này không chốt là ngủ cũng thấy tiếc 😅",
+"Em cảnh báo trước rồi nha 😆 – {name} sắp cháy hàng thật sự đó!",
+"Ai đọc tới đây mà chưa nhắn em chốt {name} là gan to dữ luôn 😜",
+"Chốt lẹ đi mấy chị ơi, lát em off Shopee là hết sạch luôn đó 😭",
+"Giá này em mà không đăng sớm là bị khách la 😭 – {name} rẻ bất ngờ luôn!",
+"Mấy đơn {name} bay vèo vèo 🚀 – ai chưa chốt là trễ chuyến nha!",
+"Ai chốt nhanh em thương, em tặng thêm món nhỏ xinh luôn 🎁",
+"Đừng để em phải nhắn lại 'hết hàng rồi nha' 😢 – {name} sắp bay hết!",
+"Em nói nhỏ thôi 🤫 – {name} hôm nay sale bí mật, chốt nhanh mới kịp!",
+"Không nói nhiều, giá {name} này chỉ có hôm nay – mai là hết sạch 😭",
+"Ai chốt trước em ship trước nha 🚚 – chậm tay là phải đợi đợt sau luôn đó!",
+"Chốt liền tay đi mấy chị ơi 😍 – hàng xịn, giá rẻ, em nói thiệt luôn á!",
+"Đơn {name} chạy nhanh như tin đồn luôn 😆 – ai chưa chốt là mất liền nha!",
+"Inbox em lẹ kẻo trễ 💬 – {name} đang cháy hàng quá trời luôn!",
+"Giá này mà không chốt là em dỗi luôn á 😤",
+"Nhanh tay giúp em chốt đơn nha 😘 – {name} hôm nay hot quá trời luôn!"
+];
+
+const hashtagPool = [
+  "#KOLUytin",
+  "#HangMoiVe",
+  "#Shopxuhuong",
+  "#LuotVuiMuaLien",
+  "#VideohangTieudung",
+  "#VideohangDoisong",
+  "#VideohangGiadung",
+  "#VideohangMypham",
+  "#VideohangLamdep",
+  "#sandealcungkol",
+  "#KOLreview",
+  "#ShopeeVideo",
+  "#ShopeeCreator",
+  "#VideoReview",
+  "#SanSale",
+  "#DealHot",
+  "#GiaTot"
+];
+
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function randHashtags(n=3){
+  const pool=[...hashtagPool], out=[];
+  while(out.length<n && pool.length){
+    out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  return out.join(" ");
+}
+function generateCaption(name){
+  return rand(captionTemplates).replace("{name}",name) + " " + randHashtags(3);
+}
+
+/* ================= MOBILE SAFE COPY ================= */
+function copyToClipboard(text){
+  if(!text) return false;
+  try{
+    const ta=document.createElement("textarea");
+    ta.value=text;
+    ta.style.position="fixed";
+    ta.style.top="0";
+    ta.style.left="0";
+    ta.style.opacity="0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0,ta.value.length);
+    const ok=document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){
+    console.error("COPY FAIL",e);
+    return false;
+  }
+}
+
+/* ================= UI ================= */
+const rowsEl=document.getElementById("rows");
+const summary=document.getElementById("summary");
+const currentName=document.getElementById("currentName");
+const captionText=document.getElementById("captionText");
+
+function save(){
+  localStorage.setItem("posted",JSON.stringify(posted));
+  localStorage.setItem("history",JSON.stringify(history));
+}
+
+function updateSummary(){
+  summary.textContent=
+    "ĐÃ ĐĂNG "+
+    Object.keys(posted).filter(i=>posted[i]).length+
+    "/"+PRODUCTS.length+" SẢN PHẨM";
+}
+
+function render(){
+  rowsEl.innerHTML="";
+  const q=document.getElementById("search").value.toLowerCase();
+  PRODUCTS
+    .filter(p=>!q||p.name.toLowerCase().includes(q)||("#"+p.id)===q)
+    .forEach(p=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td><div class="dot ${posted[p.id]?'posted':''}"></div></td>
+        <td>#${p.id}</td>
+        <td>${p.name}</td>
+        <td class="actions">
+          <button class="blue" onclick="show(${p.id})">Hiển thị</button>
+          <button class="blue" onclick="unmark(${p.id})">Đánh dấu chưa đăng</button>
+        </td>`;
+      rowsEl.appendChild(tr);
+    });
+}
+
+function show(id){
+  const p=PRODUCTS.find(x=>x.id===id);
+  current=id;
+  currentName.textContent="Sản phẩm "+id;
+  captionText.value=generateCaption(p.name);
+  history.unshift("Hiển thị SP "+id);
+  save();render();
+}
+
+function unmark(id){
+  posted[id]=false;
+  save();render();updateSummary();
+}
+
+/* ================= EVENTS ================= */
+document.getElementById("randomBtn").onclick=()=>{
+  const list=PRODUCTS.filter(p=>!posted[p.id]);
+  const src=list.length?list:PRODUCTS;
+  show(src[Math.floor(Math.random()*src.length)].id);
+};
+
+document.getElementById("copyVideo").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  copyToClipboard(p.drive);
+  posted[current]=true;
+  updateSummary();save();
+};
+
+document.getElementById("copyShopee").onclick=()=>{
+  if(!current)return;
+  copyToClipboard(PRODUCTS.find(p=>p.id===current).shopee);
+};
+
+document.getElementById("copyCaption").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  const cap=generateCaption(p.name);
+  captionText.value=cap;
+  copyToClipboard(cap);
+};
+
+document.getElementById("toggleCaption").onclick=()=>captionBox.classList.toggle("hidden");
+document.getElementById("toggleHistory").onclick=()=>historyBox.classList.toggle("hidden");
+document.getElementById("clearHistory").onclick=()=>{
+  history=[];posted={};
+  save();render();updateSummary();
+};
+
+document.getElementById("search").oninput=render;
+
+updateSummary();render();
+</script>
+
+</body>
+</html>
