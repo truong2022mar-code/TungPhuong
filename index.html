@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sora Tool</title>
+
+<style>
+body{margin:0;background:#f2f2f2;font-family:system-ui}
+.phone{max-width:420px;margin:auto;background:#fff;min-height:100vh;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+header{text-align:center;padding:14px}
+#summary{font-weight:900;color:#b30000;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
+button{border:0;border-radius:8px;padding:10px;font-weight:700;color:#fff;cursor:pointer}
+.red{background:#8b0000}
+.blue{background:#0b84ff}
+.label{text-align:center;font-weight:700;padding:10px}
+main{padding:12px}
+.search{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px}
+table{width:100%;border-collapse:collapse}
+td{padding:6px;font-size:14px;border-bottom:1px solid #eee}
+.actions{display:flex;flex-direction:column;gap:4px}
+.dot{width:10px;height:10px;border-radius:50%;background:#ccc}
+.dot.posted{background:green}
+textarea{width:100%;height:70px;border-radius:8px;border:1px solid #ddd;padding:8px}
+.hidden{display:none}
+.hist{max-height:120px;overflow:auto;border:1px dashed #ddd;border-radius:6px;padding:6px}
+</style>
+</head>
+
+<body>
+<div class="phone">
+
+<header>
+  <div id="summary">ĐÃ ĐĂNG 0/300 SẢN PHẨM</div>
+
+  <div class="grid">
+    <button class="red" id="randomBtn">Random Sản phẩm</button>
+    <div class="label" id="currentName">Sản phẩm -</div>
+
+    <button class="blue" id="copyVideo">Copy Link Video</button>
+    <button class="blue" id="importPosted">Nhập SP đã đăng</button>
+
+    <button class="blue" id="copyCaption">Copy Caption</button>
+    <button class="blue" id="copyPosted">Copy SP đã đăng</button>
+
+    <button class="blue" id="copyShopee">Copy Link Shopee</button>
+    <button class="blue" id="toggleHistory">Lịch sử</button>
+
+    <button class="blue" id="toggleCaption">Caption/Tên SP</button>
+    <button class="blue" id="clearHistory">Xóa Lịch sử</button>
+  </div>
+</header>
+
+<main>
+  <div id="captionBox" class="hidden">
+    <textarea id="captionText" readonly></textarea>
+  </div>
+
+  <div id="historyBox" class="hidden">
+    <div class="hist" id="historyList"></div>
+  </div>
+
+  <input class="search" id="search" placeholder="Tìm theo số (#1) hoặc từ khóa">
+
+  <table>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+
+</div>
+
+<script>
+/* ================= DATA ================= */
+const PRODUCTS = [{"id":1,"name":"Gel tắm thốt nốt Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1twEUE0IDqbkaKJ1ySjiMFlOLnON5xtyi/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43801084859"},{"id":2,"name":"Gel tắm thốt nốt Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1rc-u6PrSw6ANOy0yRmOvJZPDdKaAS3yE/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43801084859"},{"id":3,"name":"Gel tắm thốt nốt Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/12YUouWRvIwu3J2hZqzEDPPfvn9BQVOeg/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43801084859"},{"id":4,"name":"Gel tắm thốt nốt Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1Slc3-lXQsH9te-w0Q8lW95Ol4FCaUgRr/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43801084859"},{"id":5,"name":"Gel tắm thốt nốt Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/10VZQGVubmLEDyXIYeuPGdNVVgQy6su5G/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43801084859"},{"id":6,"name":"Combo 2 Nước tẩy trang bí đao 500ml","drive":"https://drive.google.com/file/d/1hk5qr7VoqIea7qDrr1NhBz0voBwu-Mxy/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24922427465"},{"id":7,"name":"Combo 2 Nước tẩy trang bí đao 500ml","drive":"https://drive.google.com/file/d/1q9NfSw8Q1bUpnj6la_i_p3cRrlUEvDvj/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24922427465"},{"id":8,"name":"Combo 2 Nước tẩy trang bí đao 500ml","drive":"https://drive.google.com/file/d/12fw4qcb0tMrI1t3c_NX-JU5QKr-horp7/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24922427465"},{"id":9,"name":"Combo 2 Nước tẩy trang bí đao 500ml","drive":"https://drive.google.com/file/d/1B2KqPtWQUA9KseHJNqlMck8q9FQwpGyh/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24922427465"},{"id":10,"name":"Combo 2 Mặt nạ nghệ Hưng Yên 30ml","drive":"https://drive.google.com/file/d/1jprnbnxuxU46NjQ7k557WL8lKnnDbeQh/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22990648102"},{"id":11,"name":"Combo 2 Mặt nạ nghệ Hưng Yên 30ml","drive":"https://drive.google.com/file/d/1_mT_qZmXm_DbGckEPu4N3qnqOohVhYiS/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22990648102"},{"id":12,"name":"Combo 2 Mặt nạ nghệ Hưng Yên 30ml","drive":"https://drive.google.com/file/d/1VKzIWNXZN32e_wZJhEEisVDfvLywruhU/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22990648102"},{"id":13,"name":"Combo 2 Mặt nạ nghệ Hưng Yên 30ml","drive":"https://drive.google.com/file/d/1Oaoi-II3Pxo0_kFnxy5zZa33U23AhBsv/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22990648102"},{"id":14,"name":"Combo 2 Mặt nạ nghệ Hưng Yên 30ml","drive":"https://drive.google.com/file/d/1DijBlgLk5IJacwSShqmC-wfSerGKcYKL/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22990648102"},{"id":15,"name":"Tẩy da chết mặt cà phê Cocoon 150ml","drive":"https://drive.google.com/file/d/1LM81QeiWumbnz06l-12Z5mTIeNelOXuf/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6067666440"},{"id":16,"name":"Tẩy da chết mặt cà phê Cocoon 150ml","drive":"https://drive.google.com/file/d/1xF3Kn__a20_QOgPdio5yNc8xS0YsBuRJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6067666440"},{"id":17,"name":"Tẩy da chết mặt cà phê Cocoon 150ml","drive":"https://drive.google.com/file/d/11cCDzXxhektKrKmG7m7xQNNMgSi_Jjbz/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6067666440"},{"id":18,"name":"Tẩy da chết mặt cà phê Cocoon 150ml","drive":"https://drive.google.com/file/d/15-R5EdBdpTReWn3yqbnKzU39N6twiNkG/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6067666440"},{"id":19,"name":"Tẩy da chết mặt cà phê Cocoon 150ml","drive":"https://drive.google.com/file/d/1qh8iO8KA6KeNaT6FHTuWvOf_DvNSmv4Q/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6067666440"},{"id":20,"name":"Nước tẩy trang sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1v1nXqjc5ZGPLtFx0lLMn9-u0MOCB3VMw/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/41663893163"},{"id":21,"name":"Nước tẩy trang sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1lVIXl873zD8wPSpGexPKlLDUXNc94OSq/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/41663893163"},{"id":22,"name":"Nước tẩy trang sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1nqrD6LhkPA0W8SWdKTxrgg4MJKSaHbmO/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/41663893163"},{"id":23,"name":"Nước tẩy trang sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1oXrCmo-RreZuoKT6yaO_I3K__9g5tcXd/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/41663893163"},{"id":24,"name":"Nước tẩy trang sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/121aXSTzw1gpIjg0aLaoKFosMpf71FAq5/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/41663893163"},{"id":25,"name":"Combo Toner sen 310ml và Tẩy trang bí 500ml","drive":"https://drive.google.com/file/d/1WcokABn1VCCgGKlleFg28mjK9IQhKWIL/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28165355844"},{"id":26,"name":"Combo Toner sen 310ml và Tẩy trang bí 500ml","drive":"https://drive.google.com/file/d/1kUteU_666vCIwsLiGW9nOcX2E-d1dG_F/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28165355844"},{"id":27,"name":"Combo Toner sen 310ml và Tẩy trang bí 500ml","drive":"https://drive.google.com/file/d/17fIpuWE73OJCv4EeBVs9nTeoaZ0xW1Zk/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28165355844"},{"id":28,"name":"Combo Toner sen 310ml và Tẩy trang bí 500ml","drive":"https://drive.google.com/file/d/1nXoalcPrdhuO3Es1Sjszg6WINBVqWRqg/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28165355844"},{"id":29,"name":"Combo Toner sen 310ml và Tẩy trang bí 500ml","drive":"https://drive.google.com/file/d/1JPhaOxafip-qIGn0KeTYme0NjboT-FyR/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28165355844"},{"id":30,"name":"Nước tẩy trang sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1_YdKwUMzeWEXPfKKrG7Fm5BmgnligOHy/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42313897084"},{"id":31,"name":"Nước tẩy trang sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1pnOofsNkrWHU-rMBHR82alexr_8wF8rl/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42313897084"},{"id":32,"name":"Nước tẩy trang sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1I40g3mMlFUIpAuHuG4NPiLNcK4UmZGZV/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42313897084"},{"id":33,"name":"Nước tẩy trang sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1EvP1sp_QEuV65PMZiFkZ902K7n3k6Lb5/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42313897084"},{"id":34,"name":"Nước tẩy trang sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1b26Ywt6pfdmQzeYfocl1bXXQXf0-D_WY/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42313897084"},{"id":35,"name":"Túi Refill Tẩy da chết body cà phê (Quà tặng)","drive":"https://drive.google.com/file/d/1Yn_Arw-brSqlqJ1C9KZhr9k-YeQxfq3B/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/27041392149"},{"id":36,"name":"Túi Refill Tẩy da chết body cà phê (Quà tặng)","drive":"https://drive.google.com/file/d/1kzkd_qj0uF1kOzdAWe2wU_69tDj0yw7w/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/27041392149"},{"id":37,"name":"Túi Refill Tẩy da chết body cà phê (Quà tặng)","drive":"https://drive.google.com/file/d/15-mFxck-bZYgbKvuKEUMqoP0FXzmA17d/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/27041392149"},{"id":38,"name":"Túi Refill Tẩy da chết body cà phê (Quà tặng)","drive":"https://drive.google.com/file/d/1KFw91QUAEwrRLvoCeivCWlGAI3MrQJiv/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/27041392149"},{"id":39,"name":"Tẩy da chết mặt cà phê 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1_4fRwjusQ9LiYu3LUb2UnvxckYgdrTG9/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/44125137845"},{"id":40,"name":"Tẩy da chết mặt cà phê 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1JRhX0MlQDdA1WGkHGMvJ_nVLxmtMyPn5/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/44125137845"},{"id":41,"name":"Tẩy da chết mặt cà phê 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1A5dAXEbxcCa8hKr078m12xhG-rka_iLs/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/44125137845"},{"id":42,"name":"Tẩy da chết mặt cà phê 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1lBHkqog85SzU7lKRtTAgmcOy-UL5xmHv/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/44125137845"},{"id":43,"name":"Tẩy da chết mặt cà phê 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1XGuJWqb2RDEbsDZHwTh6Y7ehcM7NoWro/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/44125137845"},{"id":44,"name":"Combo Tẩy trang 500ml và Gel rửa 310ml","drive":"https://drive.google.com/file/d/1LssUYUwGEcX5dMTcR1ab7cTdB4Oo4udn/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24771172800"},{"id":45,"name":"Combo Tẩy trang 500ml và Gel rửa 310ml","drive":"https://drive.google.com/file/d/1lEwZqK7VNHt3dphKClMRwyZryGdBiJ87/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24771172800"},{"id":46,"name":"Combo Tẩy trang 500ml và Gel rửa 310ml","drive":"https://drive.google.com/file/d/1TdrSiLxLmwkMF5sT4Y0LUDYmIW9dYItL/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24771172800"},{"id":47,"name":"Combo Tẩy trang 500ml và Gel rửa 310ml","drive":"https://drive.google.com/file/d/1P57-uj7VFtHoLR-cyVSQUwHlTF6c1y5h/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24771172800"},{"id":48,"name":"Combo Tẩy trang 500ml và Gel rửa 310ml","drive":"https://drive.google.com/file/d/1_w2Xdw5Cenyshe1itrm2zdLi1t_6rCXu/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24771172800"},{"id":49,"name":"Sữa rửa mặt sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1yCvBeaJHHFYLlk8_lugYDmVCRQ4GYGez/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28423382158"},{"id":50,"name":"Sữa rửa mặt sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1gjWuMIQ1UAxT48ZgD7AQJTJn_dCf4wmf/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28423382158"},{"id":51,"name":"Sữa rửa mặt sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1bpXoE1CPzB5uxymXUBADJ7Fk6bQhdyMe/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28423382158"},{"id":52,"name":"Sữa rửa mặt sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1S6x4ENuDt5TguYDJrt9eUzIXAjpQtLRm/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28423382158"},{"id":53,"name":"Sữa rửa mặt sen Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1jA2zyTdB583X4ff4Ib3H9UmH_0vkY9oJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28423382158"},{"id":54,"name":"Mặt nạ nghệ Hưng Yên Cocoon 30ml","drive":"https://drive.google.com/file/d/1e6jOcpvg66MfgBFzaVA9zq5aaKRFbYnk/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/3020953743"},{"id":55,"name":"Mặt nạ nghệ Hưng Yên Cocoon 30ml","drive":"https://drive.google.com/file/d/1rZnKI7gjnTSdSr7KjsnwuEP13m4GyMc8/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/3020953743"},{"id":56,"name":"Mặt nạ nghệ Hưng Yên Cocoon 30ml","drive":"https://drive.google.com/file/d/1N9TC2ksuc6fHf-blJjZ8XCo2xPi-ybNp/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/3020953743"},{"id":57,"name":"Mặt nạ nghệ Hưng Yên Cocoon 30ml","drive":"https://drive.google.com/file/d/1KX5M28SUjZD6Y_u6CKdtzphiI1a_dfx9/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/3020953743"},{"id":58,"name":"Mặt nạ nghệ Hưng Yên Cocoon 30ml","drive":"https://drive.google.com/file/d/1Ozbyefvg8odPK-ApfcQvy9VLSqozxtT3/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/3020953743"},{"id":59,"name":"Combo Hũ và Túi Refill Tẩy body cà phê","drive":"https://drive.google.com/file/d/1nvFS6RPJl3ICAXnHP8AUTToq4rhl88-C/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42868482461"},{"id":60,"name":"Combo Hũ và Túi Refill Tẩy body cà phê","drive":"https://drive.google.com/file/d/1sRGISb8xvF2v8gSJgJlviTCDARDWDWVu/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42868482461"},{"id":61,"name":"Combo Hũ và Túi Refill Tẩy body cà phê","drive":"https://drive.google.com/file/d/1hZRMVdZu71MWjOwNUlzLn1G0r7foblU3/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42868482461"},{"id":62,"name":"Combo Hũ và Túi Refill Tẩy body cà phê","drive":"https://drive.google.com/file/d/1n2Gw8LmdOqvKCW13xL0PNDu_L4vVN9g2/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42868482461"},{"id":63,"name":"Combo Hũ và Túi Refill Tẩy body cà phê","drive":"https://drive.google.com/file/d/1yAeYhx8VUFVO4tngvJCHLrhvZESzsn0t/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/42868482461"},{"id":64,"name":"Toner nước sen Hậu Giang Cocoon 310ml","drive":"https://drive.google.com/file/d/1NiH72z0edqHcixael-au5yd1jvse9L35/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25779169863"},{"id":65,"name":"Toner nước sen Hậu Giang Cocoon 310ml","drive":"https://drive.google.com/file/d/1cgIkbqDHum_tiKzdRmxDPiMCYIiFFjV2/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25779169863"},{"id":66,"name":"Toner nước sen Hậu Giang Cocoon 310ml","drive":"https://drive.google.com/file/d/1ufoULpZ0DeIDT_WMyMbRtXpGCcL__eln/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25779169863"},{"id":67,"name":"Toner nước sen Hậu Giang Cocoon 310ml","drive":"https://drive.google.com/file/d/1ioddWZGa9Hi-YAugjV-zshCE29JgsNDT/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25779169863"},{"id":68,"name":"Tẩy da chết da đầu bồ kết 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1az3zTmz8FehcWhc6g6nrLP1OsPVgITKN/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43370548023"},{"id":69,"name":"Tẩy da chết da đầu bồ kết 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1kfycXIw-2eMxN0Xz5Wskc0WJ94OHh7GN/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43370548023"},{"id":70,"name":"Tẩy da chết da đầu bồ kết 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1OvpVNPA_84qnx-3ljfN4x2OBtsZ7w6N0/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43370548023"},{"id":71,"name":"Tẩy da chết da đầu bồ kết 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1wtvomGkjyWP5tEjWJ2V2112uYbQBvBaL/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43370548023"},{"id":72,"name":"Tẩy da chết da đầu bồ kết 200ml","drive":"https://drive.google.com/file/d/1IYKCEpl-RIqjZ-YvTa7oG8WVWjECtjg7/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28141955476"},{"id":73,"name":"Tẩy da chết da đầu bồ kết 200ml","drive":"https://drive.google.com/file/d/1dMv8yQncWey-G_lRsQkA-2DcKMRsk2mX/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28141955476"},{"id":74,"name":"Tẩy da chết da đầu bồ kết 200ml","drive":"https://drive.google.com/file/d/1XZuHch4FLTSMb9Vv9Tt8vN4gd2LEfgHQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28141955476"},{"id":75,"name":"Tẩy da chết da đầu bồ kết 200ml","drive":"https://drive.google.com/file/d/1NVJYb0DCBLFcqFkRRVTc43zKKSbNXgYK/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28141955476"},{"id":76,"name":"Tẩy da chết da đầu bồ kết 200ml","drive":"https://drive.google.com/file/d/1awlDKKVBzwzF9Lqs7jpK293tB-8XJbpG/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28141955476"},{"id":77,"name":"Bông tẩy trang Reskin 5 lớp đa năng","drive":"https://drive.google.com/file/d/1b_5kV1oUalUIJgAt3l_PGZASLejmzCZo/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/20470939436"},{"id":78,"name":"Bông tẩy trang Reskin 5 lớp đa năng","drive":"https://drive.google.com/file/d/1_vOR14ge6Oti5PIGQjuQw_SpwlkmqYVJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/20470939436"},{"id":79,"name":"Bông tẩy trang Reskin 5 lớp đa năng","drive":"https://drive.google.com/file/d/1XP3_nztA8PUexIwWfWVQRHSYSkJCcuQH/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/20470939436"},{"id":80,"name":"Bông tẩy trang Reskin 5 lớp đa năng","drive":"https://drive.google.com/file/d/1RrvAEXb6hY9gIGqsVmOuY-sFtsBVUAOd/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/20470939436"},{"id":81,"name":"Bông tẩy trang Reskin 5 lớp đa năng","drive":"https://drive.google.com/file/d/1aiVaqqHONUUAWydEMyyzgSIQZfxL7Ov1/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/20470939436"},{"id":82,"name":"Nước tẩy trang bí đao Cocoon 500ml","drive":"https://drive.google.com/file/d/1A9h4NDiKtYHIHrayjTmv5-7jWGgZ5sZ2/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6065001847"},{"id":83,"name":"Nước tẩy trang bí đao Cocoon 500ml","drive":"https://drive.google.com/file/d/15LhNN5jE-LvcpjGE1F_yMf3hx75MyPyE/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6065001847"},{"id":84,"name":"Nước tẩy trang bí đao Cocoon 500ml","drive":"https://drive.google.com/file/d/1Y4OGQqEi3yAneMIfDDZTKbT9vYGgUoH2/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6065001847"},{"id":85,"name":"Nước tẩy trang bí đao Cocoon 500ml","drive":"https://drive.google.com/file/d/1HigypTGanAkCM0cydr_HDv-0H7CL4WfL/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6065001847"},{"id":86,"name":"Nước tẩy trang bí đao Cocoon 500ml","drive":"https://drive.google.com/file/d/1dVPbwqtObH9-qKXr3y_p9r224m8jnXzj/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6065001847"},{"id":87,"name":"Túi Refill Dầu gội bưởi Cocoon 500ml","drive":"https://drive.google.com/file/d/12IcI8do67lEcuRmB7PKfNUiUfz4hRmEu/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22874034262"},{"id":88,"name":"Túi Refill Dầu gội bưởi Cocoon 500ml","drive":"https://drive.google.com/file/d/1UtaHmzIPf-ZoRUH2Dh0JW1Ry1qE3jmZa/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22874034262"},{"id":89,"name":"Túi Refill Dầu gội bưởi Cocoon 500ml","drive":"https://drive.google.com/file/d/1pTPPyQJZrlt8RVR0FS_ZrdLcCUa3QT4m/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22874034262"},{"id":90,"name":"Túi Refill Dầu gội bưởi Cocoon 500ml","drive":"https://drive.google.com/file/d/1zFuOS5Nyln9yDuSDOumUJfVGtlbyWRKb/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22874034262"},{"id":91,"name":"Túi Refill Dầu gội bưởi Cocoon 500ml","drive":"https://drive.google.com/file/d/1CYBy7gJSbcJpBuO7UAWfN2VIaW8Xh-9H/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22874034262"},{"id":92,"name":"Combo 2 Nước dưỡng tóc bưởi 140ml","drive":"https://drive.google.com/file/d/1LRLKMGuaOHyNgZXko2widTJ6-fLU9QKC/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25364830182"},{"id":93,"name":"Combo 2 Nước dưỡng tóc bưởi 140ml","drive":"https://drive.google.com/file/d/1LYcWuFt8i_aTKGscYrPzJVnfwfecXe8Z/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25364830182"},{"id":94,"name":"Combo 2 Nước dưỡng tóc bưởi 140ml","drive":"https://drive.google.com/file/d/1gA8OKagkIlNJGRP_4aBCrlNKplqRcanw/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25364830182"},{"id":95,"name":"Combo 2 Nước dưỡng tóc bưởi 140ml","drive":"https://drive.google.com/file/d/15mmCOD7NK7otgxNMEkmJfItl7dRhTpMM/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25364830182"},{"id":96,"name":"Nước dưỡng tóc bưởi Cocoon 140ml","drive":"https://drive.google.com/file/d/1PzdYsBFRpOTzyLCaYxZUikvoGnX09mC3/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20962760332"},{"id":97,"name":"Nước dưỡng tóc bưởi Cocoon 140ml","drive":"https://drive.google.com/file/d/1_G91WQYQ81ueo-GAgwxjBMJ8_JoDn3TA/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20962760332"},{"id":98,"name":"Nước dưỡng tóc bưởi Cocoon 140ml","drive":"https://drive.google.com/file/d/1gtXl85KU-pP1ICynVK0porumR5nmQ76-/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20962760332"},{"id":99,"name":"Nước dưỡng tóc bưởi Cocoon 140ml","drive":"https://drive.google.com/file/d/1VR_8HFq87VuRJnfBUkUAYoK4HfnQ8f5s/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20962760332"},{"id":100,"name":"Nước dưỡng tóc bưởi Cocoon 140ml","drive":"https://drive.google.com/file/d/1xDVmHfIm2YJl-5SmZBWpe6sR1D6q-Cvm/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20962760332"},{"id":101,"name":"Gel tắm thốt nốt Cocoon 500ml (Quà tặng)","drive":"https://drive.google.com/file/d/1J_lRQwFjgO2ZgYcpumFKNMzT0YQjQgh4/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/40701078266"},{"id":102,"name":"Gel tắm thốt nốt Cocoon 500ml (Quà tặng)","drive":"https://drive.google.com/file/d/1CEfDzukNwe_SYV-t9qMh90FX3jrHbMFW/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/40701078266"},{"id":103,"name":"Gel tắm thốt nốt Cocoon 500ml (Quà tặng)","drive":"https://drive.google.com/file/d/1B5QED-VJxpOcxXn-Yir9C0FuUQf0-Xwk/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/40701078266"},{"id":104,"name":"Gel tắm thốt nốt Cocoon 500ml (Quà tặng)","drive":"https://drive.google.com/file/d/1zteG6X-o0Do7jeLcrhRlWLwiS25rbWsE/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/40701078266"},{"id":105,"name":"Dầu xả bưởi Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1FcixmtxKumUB--q1uqRI3b2GpHs8DgNv/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/29893201550"},{"id":106,"name":"Dầu xả bưởi Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/14gTo0wm4QtVO8AV5c96WvzFDnIsXh0CO/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/29893201550"},{"id":107,"name":"Dầu xả bưởi Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/14c1IF04KHOC6pR3hwYfHlJGFTnsO3spX/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/29893201550"},{"id":108,"name":"Dầu xả bưởi Cocoon 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1zW0i0BTxOQqOaidRvRXrRlhnsoZNLsBg/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/29893201550"},{"id":109,"name":"Combo 2 Sữa rửa mặt nghệ Cocoon 310ml","drive":"https://drive.google.com/file/d/1v1pFAPgje3i_LBwA5bkMDYS0HfqVK5de/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28142166535"},{"id":110,"name":"Combo 2 Sữa rửa mặt nghệ Cocoon 310ml","drive":"https://drive.google.com/file/d/1b8T571n8VpzUm4U_yVLjvGf8Ge0uAM6_/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28142166535"},{"id":111,"name":"Combo 2 Sữa rửa mặt nghệ Cocoon 310ml","drive":"https://drive.google.com/file/d/1X2uj5hi1SURouYvP7V6n-uwWEv2e4_wk/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28142166535"},{"id":112,"name":"Combo 2 Sữa rửa mặt nghệ Cocoon 310ml","drive":"https://drive.google.com/file/d/1slXJT0dUyVKeBY81dbk3qdZyjwss4xKQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28142166535"},{"id":113,"name":"Combo 2 Sữa rửa mặt nghệ Cocoon 310ml","drive":"https://drive.google.com/file/d/1nyVaug9LRk864B6NFBITpkqbjcZBgzqk/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28142166535"},{"id":114,"name":"Serum bí đao Cocoon 7% Niacinamide 70ml","drive":"https://drive.google.com/file/d/1Lct_ie3JktzwemZnpY8NlzzOcGpH5fC2/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/15966025026"},{"id":115,"name":"Serum bí đao Cocoon 7% Niacinamide 70ml","drive":"https://drive.google.com/file/d/14ZDxoxtAWONqCUYuyiWwnAQjHcjvoD7g/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/15966025026"},{"id":116,"name":"Serum bí đao Cocoon 7% Niacinamide 70ml","drive":"https://drive.google.com/file/d/1IXHKr08LQvSL8QlsjRHUVceYOCtqgpXB/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/15966025026"},{"id":117,"name":"Serum bí đao Cocoon 7% Niacinamide 70ml","drive":"https://drive.google.com/file/d/1wML9MLBcuVf9q9qFaYqgdQFhbN8034fL/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/15966025026"},{"id":118,"name":"Combo 2 Gel tắm thốt nốt 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1S2pQaMLAsxU7y6BquyS5Ys0zT-WGMhPw/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/41454978535"},{"id":119,"name":"Combo 2 Gel tắm thốt nốt 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1Xopkg-fwL-gxqGULc0Vf-qYgalSYrKhH/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/41454978535"},{"id":120,"name":"Combo 2 Gel tắm thốt nốt 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/132uSyT-yv9_ihkQsqndBtm1u3ZVASg3S/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/41454978535"},{"id":121,"name":"Combo 2 Gel tắm thốt nốt 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1wo4SfpCtKaXSZhmE8Eqjr7aPfAGwISuJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/41454978535"},{"id":122,"name":"Gel rửa mặt bí đao Cocoon 310ml","drive":"https://drive.google.com/file/d/1TerzcfnFga9nh7SYfYrxZz-9nYn0t14x/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6589167585"},{"id":123,"name":"Gel rửa mặt bí đao Cocoon 310ml","drive":"https://drive.google.com/file/d/1OYBtZ50K7XARaKohGAB1wbn1wFCCm8hb/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6589167585"},{"id":124,"name":"Gel rửa mặt bí đao Cocoon 310ml","drive":"https://drive.google.com/file/d/1i0j3wgKLVpIqHhbY0EBTJPy8kMpYfW-7/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6589167585"},{"id":125,"name":"Gel rửa mặt bí đao Cocoon 310ml","drive":"https://drive.google.com/file/d/1TxO1ViPjTdO3PEdk1kvgF77PCba5SQS6/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6589167585"},{"id":126,"name":"Gel rửa mặt bí đao Cocoon 310ml","drive":"https://drive.google.com/file/d/1fTxozfCpI98y-Tc9e3z4VLyv34cjegSp/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/6589167585"},{"id":127,"name":"Combo 2 Tẩy da chết body cà phê 200ml","drive":"https://drive.google.com/file/d/1RHWlXTw_Ns4no-x3Y5zNpeEfBHu0Ieyl/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/23728197201"},{"id":128,"name":"Combo 2 Tẩy da chết body cà phê 200ml","drive":"https://drive.google.com/file/d/1dfOi6oFFlxlsjOfvEk_mhMpISzYmxWNv/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/23728197201"},{"id":129,"name":"Combo 2 Tẩy da chết body cà phê 200ml","drive":"https://drive.google.com/file/d/1oVyetrHdnfJiS83tPt3SahJ-GeJQfR5O/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/23728197201"},{"id":130,"name":"Combo 2 Tẩy da chết body cà phê 200ml","drive":"https://drive.google.com/file/d/196Meo3WQHh2hrBrInnnsZFujzqdVwxej/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/23728197201"},{"id":131,"name":"Tẩy da chết mặt Cà phê 150ml (Kèm quà)","drive":"https://drive.google.com/file/d/1boc2Zc_qyb-msqDnBIuxc5zNj2uFiPwT/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/40307753241"},{"id":132,"name":"Tẩy da chết mặt Cà phê 150ml (Kèm quà)","drive":"https://drive.google.com/file/d/1up7fLFmahkC4Olhkk5zzTkSX4vJzs-KC/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/40307753241"},{"id":133,"name":"Tẩy da chết mặt Cà phê 150ml (Kèm quà)","drive":"https://drive.google.com/file/d/1QKxoQ9nSWlqgZt2wBUAAQCoxhROtYA3f/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/40307753241"},{"id":134,"name":"Tẩy da chết mặt Cà phê 150ml (Kèm quà)","drive":"https://drive.google.com/file/d/11ev7b_T6ZvvYRaaMaK3G5ny5TlHAv-J1/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/40307753241"},{"id":135,"name":"Tẩy da chết mặt Cà phê 150ml (Kèm quà)","drive":"https://drive.google.com/file/d/1gNXWeFEf2rZuMREMdcRECU4BQdt0EqRY/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/40307753241"},{"id":136,"name":"Tẩy da chết body Thốt Nốt Cocoon 200ml","drive":"https://drive.google.com/file/d/1pSEIUcfAftbvHnKrpMgPKmh5KqrlNiac/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/45602399232"},{"id":137,"name":"Tẩy da chết body Thốt Nốt Cocoon 200ml","drive":"https://drive.google.com/file/d/1ZVBpGwHYZ6tXD5lpD3KlaJGKedOTcWkH/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/45602399232"},{"id":138,"name":"Tẩy da chết body Thốt Nốt Cocoon 200ml","drive":"https://drive.google.com/file/d/1RCQjkCFztDU78Iv0wsaoUpgV_zQIzAtw/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/45602399232"},{"id":139,"name":"Tẩy da chết body Thốt Nốt Cocoon 200ml","drive":"https://drive.google.com/file/d/19p7ck4Z5qaGkzUxrfDinsjbHTw7U5SRC/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/45602399232"},{"id":140,"name":"Dầu gội bưởi Cocoon giảm gãy rụng 310ml","drive":"https://drive.google.com/file/d/1lLgzhgbKhYo5hpTG6ze3CjVUwd2GhhZB/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7395303491"},{"id":141,"name":"Dầu gội bưởi Cocoon giảm gãy rụng 310ml","drive":"https://drive.google.com/file/d/1iMvvhvl6D9cofzxfB-yBoj7P8KIMJQya/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7395303491"},{"id":142,"name":"Dầu gội bưởi Cocoon giảm gãy rụng 310ml","drive":"https://drive.google.com/file/d/1Ygwyy8hHsPKy2QIYTHD1tQwh4giYia1E/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7395303491"},{"id":143,"name":"Dầu gội bưởi Cocoon giảm gãy rụng 310ml","drive":"https://drive.google.com/file/d/17CDZMx1eH5waErV2oEf-KB4E6wznLMIX/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7395303491"},{"id":144,"name":"Dầu gội bưởi Cocoon giảm gãy rụng 310ml","drive":"https://drive.google.com/file/d/1jj47CW3j6rHRaZnzzIy-38WBw3uoEbDm/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7395303491"},{"id":145,"name":"Combo 2 Gel rửa mặt bí đao 310ml","drive":"https://drive.google.com/file/d/10p_AED7Cg3XOME5iMFQSv4FO3IdzwW0D/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/23060303141"},{"id":146,"name":"Combo 2 Gel rửa mặt bí đao 310ml","drive":"https://drive.google.com/file/d/16LUrUqDYRGJj-xV1wrW7YaUDcKkI0e9q/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/23060303141"},{"id":147,"name":"Combo 2 Gel rửa mặt bí đao 310ml","drive":"https://drive.google.com/file/d/1vAgT1GabMlU-CK12OSgzwOXt9nCgtpxB/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/23060303141"},{"id":148,"name":"Combo 2 Gel rửa mặt bí đao 310ml","drive":"https://drive.google.com/file/d/1t7w9xfp7FzgmBoQw5ujOTJ11IDWAlUG7/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/23060303141"},{"id":149,"name":"Combo 2 Gel rửa mặt bí đao 310ml","drive":"https://drive.google.com/file/d/1CtpeoIEzmr9o3KVH2rznWd5sqRVFKgXb/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/23060303141"},{"id":150,"name":"Combo 2 Sữa chống nắng bí đao 50ml","drive":"https://drive.google.com/file/d/1czKELJfrB8m833Z4epVPMpzgkzOBXCOt/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43015007838"},{"id":151,"name":"Combo 2 Sữa chống nắng bí đao 50ml","drive":"https://drive.google.com/file/d/19Ke2wQWC8xvYA0rLh8r-mAm2AM5Up38d/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43015007838"},{"id":152,"name":"Combo 2 Sữa chống nắng bí đao 50ml","drive":"https://drive.google.com/file/d/1ZXd9zcdrR-4f0QOKZAXYJi8itWkO-h-n/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43015007838"},{"id":153,"name":"Combo 2 Sữa chống nắng bí đao 50ml","drive":"https://drive.google.com/file/d/1obHcLzhszNxaWWqiXKEQPrVuvjSPd1tB/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43015007838"},{"id":154,"name":"Combo 2 Sữa chống nắng bí đao 50ml","drive":"https://drive.google.com/file/d/1-N3Nfzm5kMGFWdaJqdNeDC0Ob0AmwZBB/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/43015007838"},{"id":155,"name":"Combo Mặt nạ và Thạch bí đao (Tặng Serum)","drive":"https://drive.google.com/file/d/1ZBrkAwnXZe8kZNIsMEF3HVkXvfDPO9k4/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/12496990953"},{"id":156,"name":"Combo Mặt nạ và Thạch bí đao (Tặng Serum)","drive":"https://drive.google.com/file/d/1WLimY7l5LJ96WKHIwG2vhdZCtaBr8nFB/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/12496990953"},{"id":157,"name":"Combo Mặt nạ và Thạch bí đao (Tặng Serum)","drive":"https://drive.google.com/file/d/1dlvXBFtV7UU2YEm9C6VunteIxyvbyoYZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/12496990953"},{"id":158,"name":"Combo Mặt nạ và Thạch bí đao (Tặng Serum)","drive":"https://drive.google.com/file/d/1g1sJZHYdHx8G45f7DlokHMX7jdVrisk7/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/12496990953"},{"id":159,"name":"Combo Mặt nạ và Thạch bí đao (Tặng Serum)","drive":"https://drive.google.com/file/d/1idzW8jVrDk65bg8K3O-xAOXWcXwCTTF4/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/12496990953"},{"id":160,"name":"Combo Mặt nạ và Thạch nghệ (Tặng Serum)","drive":"https://drive.google.com/file/d/1FOLAvN8OiYV7sYCMZBhWwI94tjSo2oVA/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21754035769"},{"id":161,"name":"Combo Mặt nạ và Thạch nghệ (Tặng Serum)","drive":"https://drive.google.com/file/d/167zTSSDEbb6rQUe069rNjs3GZT_8jkBu/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21754035769"},{"id":162,"name":"Combo Mặt nạ và Thạch nghệ (Tặng Serum)","drive":"https://drive.google.com/file/d/1s7slRT5Wr8MxvauhdQCoferaJaDavkIk/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21754035769"},{"id":163,"name":"Combo Mặt nạ và Thạch nghệ (Tặng Serum)","drive":"https://drive.google.com/file/d/1JotKNTaIbvKDn2TE57j3sJ1ZUHMdyhwH/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21754035769"},{"id":164,"name":"Combo Mặt nạ và Thạch nghệ (Tặng Serum)","drive":"https://drive.google.com/file/d/1HcVUw7eMNeri0KGpg0SPrSYc1dWeC47Y/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21754035769"},{"id":165,"name":"Sữa rửa mặt nghệ Hưng Yên Cocoon 310ml","drive":"https://drive.google.com/file/d/1EhfwqsCfudodmRA0m62hk7lDSE4EbX4N/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20711497482"},{"id":166,"name":"Sữa rửa mặt nghệ Hưng Yên Cocoon 310ml","drive":"https://drive.google.com/file/d/1De8AARu3GGFukQ7CBznvtd-CvXf6PK2p/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20711497482"},{"id":167,"name":"Sữa rửa mặt nghệ Hưng Yên Cocoon 310ml","drive":"https://drive.google.com/file/d/1pgdUXeHEfMFZ3NysCAOh5XNXp-s2U0pm/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20711497482"},{"id":168,"name":"Sữa rửa mặt nghệ Hưng Yên Cocoon 310ml","drive":"https://drive.google.com/file/d/1JH7PzOUVUWYaMYJb2E1fiYAEbk3km0uh/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20711497482"},{"id":169,"name":"Sữa rửa mặt nghệ Hưng Yên Cocoon 310ml","drive":"https://drive.google.com/file/d/1mESqlIQdEES2us7W4rLJni3AdyBBlIwE/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20711497482"},{"id":170,"name":"Thạch bí đao Cocoon cấp ẩm 30ml","drive":"https://drive.google.com/file/d/1cD6MYDnRmK4M1rSAlmF7KbJ2esw7Xhjb/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/12610087745"},{"id":171,"name":"Thạch bí đao Cocoon cấp ẩm 30ml","drive":"https://drive.google.com/file/d/1PF61qIJLy86kkibYTko0QmlF42cJovwy/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/12610087745"},{"id":172,"name":"Thạch bí đao Cocoon cấp ẩm 30ml","drive":"https://drive.google.com/file/d/19JIUmw-i9Tp9vlcbBdddZEgobRC5vFsT/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/12610087745"},{"id":173,"name":"Thạch bí đao Cocoon cấp ẩm 30ml","drive":"https://drive.google.com/file/d/16P9ac_nVwG3oZ0WxAy7rCwplIUMTMeno/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/12610087745"},{"id":174,"name":"Dung dịch chấm mụn bí đao Cocoon 5ml","drive":"https://drive.google.com/file/d/1K1C7nd9WIO-y5-enV5WeQkcZ_Ug4baXs/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4427754887"},{"id":175,"name":"Dung dịch chấm mụn bí đao Cocoon 5ml","drive":"https://drive.google.com/file/d/1k0GBKFO6ly-uAqRTkK0tvYZWxLWw0NMA/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4427754887"},{"id":176,"name":"Dung dịch chấm mụn bí đao Cocoon 5ml","drive":"https://drive.google.com/file/d/15YPm4B_FYnzBGHxrvI6yhQtzf9INdWsy/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4427754887"},{"id":177,"name":"Dung dịch chấm mụn bí đao Cocoon 5ml","drive":"https://drive.google.com/file/d/1QKjnEoDnKWGnbugINnUaQRzX1sfB1EdN/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4427754887"},{"id":178,"name":"Dung dịch chấm mụn bí đao Cocoon 5ml","drive":"https://drive.google.com/file/d/1XFaIpTDKUzkPhWk3dcUrk5D7-gP5mCDk/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4427754887"},{"id":179,"name":"Dầu tẩy trang hoa hồng Cocoon 140ml","drive":"https://drive.google.com/file/d/10tRHsmz-sx-Txomn2eRtaW4CYl1z7x_h/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4236341403"},{"id":180,"name":"Dầu tẩy trang hoa hồng Cocoon 140ml","drive":"https://drive.google.com/file/d/1bpFKxMpqzMed4i0amf0no-6qKfLSvCXU/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4236341403"},{"id":181,"name":"Dầu tẩy trang hoa hồng Cocoon 140ml","drive":"https://drive.google.com/file/d/1HkjH8eV4XwGdGvEzkavho17JvTdUaext/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4236341403"},{"id":182,"name":"Dầu tẩy trang hoa hồng Cocoon 140ml","drive":"https://drive.google.com/file/d/1VtrTitrkOi4VPHl2CqGtx0xrMQSKoVft/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4236341403"},{"id":183,"name":"Dầu tẩy trang hoa hồng Cocoon 140ml","drive":"https://drive.google.com/file/d/1G4YkTbf23zq6ojo9LVFGNmq3c7Xgnuaq/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4236341403"},{"id":184,"name":"Dầu xả bưởi Cocoon dưỡng ẩm 310ml","drive":"https://drive.google.com/file/d/1-X5leOBO-9mXpCmpCKNVzzL5bFGpRtiK/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4195315131"},{"id":185,"name":"Dầu xả bưởi Cocoon dưỡng ẩm 310ml","drive":"https://drive.google.com/file/d/1Q5VwsrOgpllA_DHaMEHGQoJ3XQth_3g9/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4195315131"},{"id":186,"name":"Dầu xả bưởi Cocoon dưỡng ẩm 310ml","drive":"https://drive.google.com/file/d/1qkdwShXD_0cFvGFahB4gan7vk0-dP4rS/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4195315131"},{"id":187,"name":"Dầu xả bưởi Cocoon dưỡng ẩm 310ml","drive":"https://drive.google.com/file/d/1yyghE_441nmk99u7-p4fMTGTy4uN3-9K/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/4195315131"},{"id":188,"name":"Thạch nghệ Hưng Yên Cocoon sáng da 30ml","drive":"https://drive.google.com/file/d/12Aww1aBhSOphnn4kfOdQtVWF7NiCRYn5/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/16670476461"},{"id":189,"name":"Thạch nghệ Hưng Yên Cocoon sáng da 30ml","drive":"https://drive.google.com/file/d/1NBkYLGXWBgGDPYG3ydaebG8HNqH-6G3s/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/16670476461"},{"id":190,"name":"Thạch nghệ Hưng Yên Cocoon sáng da 30ml","drive":"https://drive.google.com/file/d/1nHewqYRHffiohaV6xc_cGkH8Gg3fc7Y0/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/16670476461"},{"id":191,"name":"Thạch nghệ Hưng Yên Cocoon sáng da 30ml","drive":"https://drive.google.com/file/d/1bj5-uorB99l-FwC8tXclVsLjinGMInR5/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/16670476461"},{"id":192,"name":"Thạch nghệ Hưng Yên Cocoon sáng da 30ml","drive":"https://drive.google.com/file/d/1KHL7hvIJhzNdxcI8deGlZpr7jBvZDft7/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/16670476461"},{"id":193,"name":"Combo Kem chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/1qvWwNfmf92I67PxHwv9hjZ46YiqbLRmc/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24346583516"},{"id":194,"name":"Combo Kem chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/1-rj4o7hN7hqht_CsRIleE-DJfbmv5iBG/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24346583516"},{"id":195,"name":"Combo Kem chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/1vfNtZoPdlbP41puk5_w2vYmZqDHHgTe4/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24346583516"},{"id":196,"name":"Combo Kem chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/1DN-a7LaRN829MD4yJgUYM5Clx4oyslzk/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24346583516"},{"id":197,"name":"Combo Kem chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/1E75xxkTX6gKqIYxskGQN2p9dd-mz_eCd/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/24346583516"},{"id":198,"name":"Combo 2 Gel rửa mặt bí đao 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/12XNZo2tupEOVTxaPP5IXmnu854I2BDhz/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28811781953"},{"id":199,"name":"Combo 2 Gel rửa mặt bí đao 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1OvMQB7gcQQIQEWe2sjomFTRQE7HOB7Oa/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28811781953"},{"id":200,"name":"Combo 2 Gel rửa mặt bí đao 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/14huQaDD6kSeT2deaSgyHkq_BtdHEt2xl/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28811781953"},{"id":201,"name":"Combo 2 Gel rửa mặt bí đao 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1T3hWSXywXLCWllUDRspNj0PRfFOglsOx/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28811781953"},{"id":202,"name":"Combo 2 Gel rửa mặt bí đao 50ml (Quà tặng)","drive":"https://drive.google.com/file/d/1WR8IpKA-tJ4ZmalV9OjAV-KejyutHPoO/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28811781953"},{"id":203,"name":"Tẩy da chết body cà phê Cocoon 200ml","drive":"https://drive.google.com/file/d/1jgS69OyuwWM2KY1RG_Ot0qbdIvDU3aCu/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7906998505"},{"id":204,"name":"Tẩy da chết body cà phê Cocoon 200ml","drive":"https://drive.google.com/file/d/1Rt_IyyltmvF_D5MUvDBvva0EC0FJXQh0/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7906998505"},{"id":205,"name":"Tẩy da chết body cà phê Cocoon 200ml","drive":"https://drive.google.com/file/d/1BJZmdmnPL4pfK6Yv3SG6_qq2tGq0ph5V/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7906998505"},{"id":206,"name":"Tẩy da chết body cà phê Cocoon 200ml","drive":"https://drive.google.com/file/d/13sAn9b8tAbOeEa6WPKu6xBy9PbKLaEjT/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7906998505"},{"id":207,"name":"Tẩy da chết body cà phê Cocoon 200ml","drive":"https://drive.google.com/file/d/1ydI_rT1Bg2XXPbiavPiaBr1eewKDMYx6/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/7906998505"},{"id":208,"name":"Nước dưỡng tóc bưởi Cocoon 310ml","drive":"https://drive.google.com/file/d/1UX-x4jXU3OTUnSN5eprB0ouCRpdrLim6/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22066183596"},{"id":209,"name":"Nước dưỡng tóc bưởi Cocoon 310ml","drive":"https://drive.google.com/file/d/1y4jhke9cf6XIwjP71u05O00Dvugly4lR/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22066183596"},{"id":210,"name":"Nước dưỡng tóc bưởi Cocoon 310ml","drive":"https://drive.google.com/file/d/1mbu8odmH0oq64RhZ6T5n8z0LWGBf2T0o/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22066183596"},{"id":211,"name":"Nước dưỡng tóc bưởi Cocoon 310ml","drive":"https://drive.google.com/file/d/1ZkKRM549cmlGqLUvSqqWGR-wLOSim2SU/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22066183596"},{"id":212,"name":"Nước dưỡng tóc bưởi Cocoon 310ml","drive":"https://drive.google.com/file/d/1jkFUT1BCOR281zF_XAwOtvcAXAwFhgHY/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/22066183596"},{"id":213,"name":"Nước dưỡng da đầu bồ kết Cocoon 140ml","drive":"https://drive.google.com/file/d/1eY7TfJKKoDnBfl3EtUSb05aCNytkOiKF/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28378624222"},{"id":214,"name":"Nước dưỡng da đầu bồ kết Cocoon 140ml","drive":"https://drive.google.com/file/d/1utJC49u9SA1V1hebN8yCNnYFz1wQYEFE/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28378624222"},{"id":215,"name":"Nước dưỡng da đầu bồ kết Cocoon 140ml","drive":"https://drive.google.com/file/d/1uk7S444z0pp_eDLyDpQ1lyuqcmo-dlIf/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28378624222"},{"id":216,"name":"Nước dưỡng da đầu bồ kết Cocoon 140ml","drive":"https://drive.google.com/file/d/180C5VrFdrbonJV18bdyMZ4b4JM1GNY6-/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28378624222"},{"id":217,"name":"Nước dưỡng da đầu bồ kết Cocoon 140ml","drive":"https://drive.google.com/file/d/1Z-t1463fa-qU-ewp_tJ3u6zHmWZYR9pd/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28378624222"},{"id":218,"name":"Combo 2 Tẩy da chết body Thốt nốt","drive":"https://drive.google.com/file/d/15FYVfA806CM7zWGLiKo7PaRyWjeWFPz1/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/48102404158"},{"id":219,"name":"Combo 2 Tẩy da chết body Thốt nốt","drive":"https://drive.google.com/file/d/1ZUyRjw9npOTayFymB3y8Hb4g4vxcD6k4/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/48102404158"},{"id":220,"name":"Combo 2 Tẩy da chết body Thốt nốt","drive":"https://drive.google.com/file/d/1tSQbICrmGrXyfrw0YvvHaOD6INbs_J0w/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/48102404158"},{"id":221,"name":"Toner bí đao Cocoon giảm mụn 310ml","drive":"https://drive.google.com/file/d/1O1GPtzg9Zgyg4ti8Iju0V6fIRIImm2FV/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/8356106681"},{"id":222,"name":"Toner bí đao Cocoon giảm mụn 310ml","drive":"https://drive.google.com/file/d/1ibBClsCjNNMQ3LP2Wr2wk83JAi9prgTf/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/8356106681"},{"id":223,"name":"Toner bí đao Cocoon giảm mụn 310ml","drive":"https://drive.google.com/file/d/1a1bnaTrC1-seVLBFMhjASrlTYPtyk2F8/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/8356106681"},{"id":224,"name":"Toner bí đao Cocoon giảm mụn 310ml","drive":"https://drive.google.com/file/d/1XS5T6pbtudjtOtddkrKRh-wTThKJzJ-t/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/8356106681"},{"id":225,"name":"Mặt nạ bí đao Cocoon giảm mụn 30ml","drive":"https://drive.google.com/file/d/1_BgPmMX6MEZ9VCW8cljYkMeyXD2wutRf/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/5518322218"},{"id":226,"name":"Mặt nạ bí đao Cocoon giảm mụn 30ml","drive":"https://drive.google.com/file/d/1bmPrJk1-HllR4GMtVK8aU_gCQ9yt8nAO/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/5518322218"},{"id":227,"name":"Mặt nạ bí đao Cocoon giảm mụn 30ml","drive":"https://drive.google.com/file/d/1GrQ57P8NE7h27sqQ6mn8gCTI5esdnxfx/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/5518322218"},{"id":228,"name":"Mặt nạ bí đao Cocoon giảm mụn 30ml","drive":"https://drive.google.com/file/d/1NO7katV0UIN8N_nqMDPhqbWFC9OR8n8i/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/5518322218"},{"id":229,"name":"Mặt nạ bí đao Cocoon giảm mụn 30ml","drive":"https://drive.google.com/file/d/13peWbh92MbpX-DDqfJKVd-PrF8aTitSK/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/5518322218"},{"id":230,"name":"Bông tẩy trang Reskin 3 lớp 180 miếng","drive":"https://drive.google.com/file/d/1LzKHFRNuP919CqD05D9rspVX_Q0Pd2fy/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/20737958549"},{"id":231,"name":"Bông tẩy trang Reskin 3 lớp 180 miếng","drive":"https://drive.google.com/file/d/1anhgGj7ipu0bBwzxNRfg1K0pbVyJAbOj/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/20737958549"},{"id":232,"name":"Bông tẩy trang Reskin 3 lớp 180 miếng","drive":"https://drive.google.com/file/d/1Hs7HTYkJl0jD3MXvLdZ_xfWxSmT0qc8w/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/20737958549"},{"id":233,"name":"Bông tẩy trang Reskin 3 lớp 180 miếng","drive":"https://drive.google.com/file/d/1G1k3DrmHzcGozN6IWfoIOKaoXUcCQUVZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/20737958549"},{"id":234,"name":"Toner nước sen Hậu Giang Cocoon 140ml","drive":"https://drive.google.com/file/d/1GN1szNofwz_yU0w-GXCyXFG8ISpl8T5Y/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25029170077"},{"id":235,"name":"Toner nước sen Hậu Giang Cocoon 140ml","drive":"https://drive.google.com/file/d/1HZtZWMPlQeYwWd6l-D2hduNdXuFgxlez/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25029170077"},{"id":236,"name":"Toner nước sen Hậu Giang Cocoon 140ml","drive":"https://drive.google.com/file/d/1PQXgE0zPLX28dqJFKtqSN8M9oYe0Q7e7/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25029170077"},{"id":237,"name":"Toner nước sen Hậu Giang Cocoon 140ml","drive":"https://drive.google.com/file/d/1TGFXRmQO6NN4g7FKAx9LJHxJf1aW-Wth/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/25029170077"},{"id":238,"name":"Toner nước sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1RbWhMxh9ChrLvRFEkB3Vij3l_0Duqrej/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28230658573"},{"id":239,"name":"Toner nước sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1LC14RffULgpAdCWRogws7KBm1bMvFgEB/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28230658573"},{"id":240,"name":"Toner nước sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1uh7MqaG9ch_HSeuZZODw4Dr4Ug-T80T0/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28230658573"},{"id":241,"name":"Toner nước sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1HeudCH53dSiWWQ-Tqb8MASIarK9exgms/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28230658573"},{"id":242,"name":"Toner nước sen Hậu Giang Cocoon 500ml","drive":"https://drive.google.com/file/d/1vb2TZEBVWvsEmDlHp4GxcIjptF73LuMt/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/28230658573"},{"id":243,"name":"Nước tẩy trang bí đao Cocoon 140ml","drive":"https://drive.google.com/file/d/1U2JWkoe2hhstZ4nvAHwF_2Ge1oGPsNTH/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/8256074918"},{"id":244,"name":"Nước tẩy trang bí đao Cocoon 140ml","drive":"https://drive.google.com/file/d/1rgKQwt9u-NCtz5bjRjeOGmVvHr2uDRhD/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/8256074918"},{"id":245,"name":"Nước tẩy trang bí đao Cocoon 140ml","drive":"https://drive.google.com/file/d/11jqRRD8o_FGA0LKzeM1LGOP8I2SavPRZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/8256074918"},{"id":246,"name":"Serum nghệ Hưng Yên C22 Cocoon 30ml","drive":"https://drive.google.com/file/d/16mKEB4wKJpBo1yQxWKm35Hx-h4zFjC3k/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21419279127"},{"id":247,"name":"Serum nghệ Hưng Yên C22 Cocoon 30ml","drive":"https://drive.google.com/file/d/1i7PJkBzUqpcxDM24T3BU1FzblBv_j5-E/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21419279127"},{"id":248,"name":"Serum nghệ Hưng Yên C22 Cocoon 30ml","drive":"https://drive.google.com/file/d/1JL0UoQIMUEgSNgbaGTgPrN6_ieW9Zr-9/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21419279127"},{"id":249,"name":"Serum nghệ Hưng Yên C22 Cocoon 30ml","drive":"https://drive.google.com/file/d/1VNShh_fVz47likpP8DHV8bM6RMpAI41v/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21419279127"},{"id":250,"name":"Serum nghệ Hưng Yên C22 Cocoon 30ml","drive":"https://drive.google.com/file/d/1GByhxhmlZziSXnzpGwXys_rapV3UNL-P/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/21419279127"},{"id":251,"name":"Combo Mặt nạ nghệ 30ml (Tặng tẩy body)","drive":"https://drive.google.com/file/d/1-r9WYihn6cIz0hurd_MT7LVkpXpUe0lL/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/29231186096"},{"id":252,"name":"Combo Mặt nạ nghệ 30ml (Tặng tẩy body)","drive":"https://drive.google.com/file/d/1CfupLRJUxPbaIQfC82OsoRVz_H4zImrB/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/29231186096"},{"id":253,"name":"Combo Mặt nạ nghệ 30ml (Tặng tẩy body)","drive":"https://drive.google.com/file/d/1BrLtWbGF0jYGCuScYRilxJdz2hypzpr6/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/29231186096"},{"id":254,"name":"Combo Mặt nạ nghệ 30ml (Tặng tẩy body)","drive":"https://drive.google.com/file/d/16EBUUY4XZV4teZ0IFq1C7GMIFX0oeV8t/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/29231186096"},{"id":255,"name":"Mặt nạ dưỡng trắng Lomere Super Panthenol 23g","drive":"https://drive.google.com/file/d/1qgLvUr_xOTx25xYHDE-WYWcJdHUOT6su/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/21280350060"},{"id":256,"name":"Mặt nạ dưỡng trắng Lomere Super Panthenol 23g","drive":"https://drive.google.com/file/d/10yFfw_ocKz2cnzim6AK-TOC7x0E_JIJ2/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/21280350060"},{"id":257,"name":"Mặt nạ dưỡng trắng Lomere Super Panthenol 23g","drive":"https://drive.google.com/file/d/1bdXy_7etLSnq4b_uSbdrbD6di56pSJL-/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/21280350060"},{"id":258,"name":"Mặt nạ dưỡng trắng Lomere Super Panthenol 23g","drive":"https://drive.google.com/file/d/1JsibUurpfNE2uz3hs7HbAxit1TuPKZo8/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/21280350060"},{"id":259,"name":"Sữa chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/19VR41fjA7-wO9XJu_BXqureh2Gbz_x7O/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/19885064795"},{"id":260,"name":"Sữa chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/10JoVcEn1QK_IYSx99zxBrbz2UOv2k68g/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/19885064795"},{"id":261,"name":"Sữa chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/1IvGuh1GPeK0kNO_f6O5OD7ORgv7eDGHf/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/19885064795"},{"id":262,"name":"Sữa chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/16Yi4ze5rX_6EugoqJhYGGjTz1KK4_1au/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/19885064795"},{"id":263,"name":"Kem chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/1eAmd3U2Uijkhu6bq8v5G1_1P56GuQWVD/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20140140610"},{"id":264,"name":"Kem chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/15qYX9XYI4AyeXZfTK_FWHkBAC_kqNNrQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20140140610"},{"id":265,"name":"Kem chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/1lk7b0h2WkuT4s4MS4UbXKU99flVqtDTm/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20140140610"},{"id":266,"name":"Kem chống nắng bí đao Cocoon 50ml","drive":"https://drive.google.com/file/d/1ttTdw4bf0Rb2VPiFcpJ4NsjcfO6aMHrZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/20140140610"},{"id":267,"name":"Serum bí đao N15 Cocoon 70ml","drive":"https://drive.google.com/file/d/1QUPOS0Gzt3qHu2QigGU2ciOn-3DVphcm/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/19467525815"},{"id":268,"name":"Serum bí đao N15 Cocoon 70ml","drive":"https://drive.google.com/file/d/1TtHk8jf832VsVmp3LKhBVgm6-yzEu0Fi/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/19467525815"},{"id":269,"name":"Serum bí đao N15 Cocoon 70ml","drive":"https://drive.google.com/file/d/1ZDjzCVeOgw6fC-yUHnlDshlrI-0B3L5H/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/19467525815"},{"id":270,"name":"Serum bí đao N15 Cocoon 70ml","drive":"https://drive.google.com/file/d/11KgGhLWWci_prLY_1196HG17dcgDUTes/view?usp=drivesdk","shopee":"https://shopee.vn/product/175753395/19467525815"},{"id":271,"name":"Kem nền chống nắng ISK BB Cream 45ml","drive":"https://drive.google.com/file/d/15SRCbgDFYMTDaSkvL-DgxthkIoQp9ahH/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/6990182520"},{"id":272,"name":"Kem nền chống nắng ISK BB Cream 45ml","drive":"https://drive.google.com/file/d/1n5wKRmS7aVtaS2VSnkAezOr-zF-xFvoM/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/6990182520"},{"id":273,"name":"Kem nền chống nắng ISK BB Cream 45ml","drive":"https://drive.google.com/file/d/1gytLua4Yxx84AGo_PNACH9z6DrEy-J-M/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/6990182520"},{"id":274,"name":"Kem nền chống nắng ISK BB Cream 45ml","drive":"https://drive.google.com/file/d/1amHniHSrTP1zOvh-CqD297SbJISL_gYg/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/6990182520"},{"id":275,"name":"Son dưỡng môi chống nắng Lomere","drive":"https://drive.google.com/file/d/1bau7pcqftcg6dcoAwm4WvSAlXgZI6lHs/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/23561687756"},{"id":276,"name":"Nước tẩy trang JMsolution 500ml/850ml","drive":"https://drive.google.com/file/d/1HehyVP1X8AY8cF-dXAYKVN3IWbUYKVbR/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/43168480400"},{"id":277,"name":"Nước tẩy trang JMsolution 500ml/850ml","drive":"https://drive.google.com/file/d/1cixD6bkYIKkRqONMh7iNrlI5GKiLQe52/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/43168480400"},{"id":278,"name":"Nước tẩy trang JMsolution 500ml/850ml","drive":"https://drive.google.com/file/d/1ESIjLbOgemK2ZDCbq6rqX5FxqOVlSuOg/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/43168480400"},{"id":279,"name":"Tinh chất rau má Beauskin Centella 30ml","drive":"https://drive.google.com/file/d/1OXjXzCSSJvVZRPTSjOyjET6MlJ1UKZP7/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/2769626923"},{"id":280,"name":"Tinh chất rau má Beauskin Centella 30ml","drive":"https://drive.google.com/file/d/1lZbFzBynOBudIhYAfasIz19dUNMobpsT/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/2769626923"},{"id":281,"name":"Tinh chất rau má Beauskin Centella 30ml","drive":"https://drive.google.com/file/d/1lRmVldEyDwq0Xz4ouPrP-Pi3BzY7kNLs/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/2769626923"},{"id":282,"name":"Tinh chất rau má Beauskin Centella 30ml","drive":"https://drive.google.com/file/d/1yFoTztlVD8ke5J0_dcnt8oWk1hlCiLJH/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/2769626923"},{"id":283,"name":"Nước tẩy trang JMsolution cấp ẩm","drive":"https://drive.google.com/file/d/10_-Gmnwr-IPHRkbdQBk-PVqNRZXHmHlz/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/2050610290"},{"id":284,"name":"Nước tẩy trang JMsolution cấp ẩm","drive":"https://drive.google.com/file/d/1IizjS1KA0tjKR9CogrJJva2H1GnGEj7X/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/2050610290"},{"id":285,"name":"Nước tẩy trang JMsolution cấp ẩm","drive":"https://drive.google.com/file/d/1nn5HPwMtan9vDogxLq2psWbwHeysHgHc/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/2050610290"},{"id":286,"name":"Nước tẩy trang JMsolution cấp ẩm","drive":"https://drive.google.com/file/d/1roncqvgCsY4rGc34HhWz-tEzbPtWjjxJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/2050610290"},{"id":287,"name":"Nước tẩy trang JMsolution cấp ẩm","drive":"https://drive.google.com/file/d/18hVJfVHvWDCB6Az6L2W9uUwr4SSXy34U/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/2050610290"},{"id":288,"name":"Son thỏi lì Beauskin Rosedew Matte 3.5g","drive":"https://drive.google.com/file/d/1CUDyWwtGywF4B9Chb0-8066ztqlrNivx/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/4507532438"},{"id":289,"name":"Son thỏi lì Beauskin Rosedew Matte 3.5g","drive":"https://drive.google.com/file/d/14v0dwZkvDi-H-MN3WWnx6DmtdEBsbmL-/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/4507532438"},{"id":290,"name":"Son thỏi lì Beauskin Rosedew Matte 3.5g","drive":"https://drive.google.com/file/d/1S8FUZQM4yZDyx6WYwfnJxFOgO6X41S8Q/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/4507532438"},{"id":291,"name":"Son thỏi lì Beauskin Rosedew Matte 3.5g","drive":"https://drive.google.com/file/d/1IH9hldyo-VADwVp7KEuSk06PFR1NQtPp/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/4507532438"},{"id":292,"name":"Son dưỡng môi Bifulby Berry 10g","drive":"https://drive.google.com/file/d/13xY6Z21nRyzNH8mRZnuju7LOACH_mQim/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/43218027799"},{"id":293,"name":"Son dưỡng môi Bifulby Berry 10g","drive":"https://drive.google.com/file/d/1bklu80pI_we040z2_14FZFKzbnGS8ACR/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/43218027799"},{"id":294,"name":"Son dưỡng môi Bifulby Berry 10g","drive":"https://drive.google.com/file/d/1SmqvMEkSnJV4U6rVCLAYjy3fYpB2wZ0C/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/43218027799"},{"id":295,"name":"Son dưỡng môi Bifulby Berry 10g","drive":"https://drive.google.com/file/d/1kU2mG66tcI4ygp3zL78j5kzGwtOhpmKW/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/43218027799"},{"id":296,"name":"Son dưỡng môi Bifulby Berry 10g","drive":"https://drive.google.com/file/d/16P0uHc6flEoCki2TKhveOpi46b6riWAR/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/43218027799"},{"id":297,"name":"Sữa rửa mặt Lomere Truffle dưỡng trắng 150ml","drive":"https://drive.google.com/file/d/1W3-xCIipdjarmoJ91ERID9Io7HkgZk0d/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/10270237485"},{"id":298,"name":"Sữa rửa mặt Lomere Truffle dưỡng trắng 150ml","drive":"https://drive.google.com/file/d/1WptcmXMBaWcO8pXP-YM2lDIVf-l_3mV1/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/10270237485"},{"id":299,"name":"Sữa rửa mặt Lomere Truffle dưỡng trắng 150ml","drive":"https://drive.google.com/file/d/12MT0u507KfSIKL5rBgw9n1pbIma7T9AI/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/10270237485"},{"id":300,"name":"Sữa rửa mặt Lomere Truffle dưỡng trắng 150ml","drive":"https://drive.google.com/file/d/1i0LdcEiD-fUxc7u4rkI-CCFeA77PCAlL/view?usp=drivesdk","shopee":"https://shopee.vn/product/82242807/10270237485"}];
+let posted = JSON.parse(localStorage.getItem('posted')||'{}');
+let history = JSON.parse(localStorage.getItem('history')||'[]');
+let current = null;
+
+/* ================= CAPTION GENERATOR ================= */
+const captionTemplates = [
+  "Săn sale chính hãng {name} giá tốt",
+  "Deal hời cực sốc {name} chính hãng",
+  "Giá rẻ bất ngờ cho {name} chính hãng",
+  "Giảm sâu số lượng có hạn {name}",
+  "Đừng bỏ lỡ {name} giá cực hời",
+  "Siêu ưu đãi {name} chính hãng hôm nay",
+  "Mua ngay {name} với giá siêu rẻ",
+  "Sản phẩm hot {name} giảm mạnh",
+  "Giá sốc hôm nay cho {name}",
+  "Mua liền tay {name} giá ưu đãi",
+  "Flash sale cực khủng cho {name} chính hãng",
+"Nhanh tay chốt đơn {name} siêu ưu đãi",
+"Mua {name} hôm nay – nhận giá hời liền tay",
+"Cơ hội vàng săn {name} chính hãng giá rẻ",
+"Chớp ngay deal ngon cho {name}",
+"Giảm sốc cực sâu {name} chính hãng hôm nay",
+"Hàng hot {name} đang giảm giá cực mạnh",
+"Đặt nhanh kẻo lỡ {name} giá tốt nhất",
+"Săn ngay {name} chính hãng – deal cực hời",
+"Giá hủy diệt cho {name} chỉ hôm nay",
+"Cực phẩm {name} chính hãng giảm đến 50%",
+"Đại tiệc sale – {name} giá rẻ không tưởng",
+"Sắm liền {name} – ưu đãi đang chờ",
+"Đặc biệt hôm nay: {name} chính hãng siêu sale",
+"Siêu phẩm {name} giá tốt nhất thị trường",
+"Chỉ hôm nay: săn {name} giá sốc không giới hạn",
+"Giảm giá cực đỉnh – {name} chính hãng chờ bạn",
+"Deal ngon bất ngờ cho {name} siêu hot",
+"Cơ hội hiếm có – {name} giá giảm cực sâu",
+"Săn ngay {name} chính hãng – giá mềm bất ngờ",
+"Bắt trend liền tay với {name} chính hãng",
+"Giá ưu đãi đặc biệt cho tín đồ săn sale {name}",
+"Giảm sâu chưa từng có – {name} chờ bạn rinh",
+"Deal ngon khó cưỡng cho {name} chính hãng",
+"Thời điểm vàng để mua {name} giá rẻ",
+"Săn ngay {name} chính hãng – càng mua càng lời",
+"Mở bán cực hot – {name} giảm giá khủng",
+"Không thể tin nổi – {name} giá thấp kỷ lục",
+"Giảm giá cực đại – cơ hội sở hữu {name}",
+"Nhanh tay đặt {name} – ưu đãi giới hạn",
+"Mua {name} hôm nay, nhận quà liền tay",
+"Ưu đãi bùng nổ cho {name} chính hãng",
+"Săn deal nửa giá cho {name} – chỉ hôm nay",
+"Giảm mạnh mừng sale – {name} giá quá hời",
+"Hàng hot {name} – giá chỉ bằng nửa thị trường",
+"Cơ hội cuối cùng sở hữu {name} giá siêu hời",
+"Siêu sale chính hãng {name} – săn ngay kẻo lỡ",
+"Giá tụt sàn cho {name} chính hãng cực chất",
+"Giảm ngay hôm nay – {name} chính hãng giá mềm",
+"Mua {name} bây giờ – nhận ưu đãi khủng liền tay",
+"Chỉ hôm nay: {name} giảm giá cực hấp dẫn",
+"Đừng chần chừ – {name} đang sale cực khủng",
+"Ưu đãi khủng nhất tháng cho {name} chính hãng",
+"Giá giảm chạm đáy – {name} hot nhất hôm nay",
+"Săn deal {name} nhanh tay kẻo hết hàng",
+"Giảm giá khủng – cơ hội sở hữu {name} chính hãng",
+"Hàng xịn {name} giá rẻ bất ngờ, mua ngay!",
+"Chớp cơ hội – {name} chính hãng đang đại hạ giá",
+"Mua liền tay {name}, ưu đãi khủng chờ bạn",
+"Giảm giá chưa từng thấy cho {name}",
+"Deal cực chất – {name} giá siêu ưu đãi",
+"Cực phẩm {name} – giá chỉ bằng 1/2 hôm nay",
+"Nhanh tay rước {name} – giá giảm cực mạnh",
+"Hạ giá toàn sàn – {name} chính hãng giảm sâu",
+"Không thể bỏ qua: {name} đang sale cháy hàng",
+"Giảm giá cực sốc, săn ngay {name} chính hãng",
+"Hàng hot {name} chính hãng, mua sớm lời to",
+"Đặt ngay {name} – deal ngon đang đợi",
+"Cực kỳ hấp dẫn – {name} giá thấp chưa từng",
+"Siêu khuyến mãi {name}, giá chỉ hôm nay thôi!",
+"Giá cực mềm cho {name} – săn ngay kẻo lỡ!",
+"Mua {name} hôm nay, tiết kiệm liền tay",
+"Hàng chính hãng {name} – deal ngon đang đợi",
+"Siêu deal nổ tung – {name} giảm giá ngập tràn",
+"Không mua hôm nay là tiếc – {name} giá rẻ bất ngờ",
+"Cơn mưa ưu đãi đổ bộ – {name} chính hãng giảm mạnh",
+"Deal cực hot – {name} chính hãng giá cực rẻ",
+"Thời gian có hạn – nhanh tay đặt {name}",
+"Săn sale sập sàn với {name} chính hãng",
+"Độc quyền hôm nay – {name} giảm giá siêu sâu",
+"Hàng hot giảm giá – {name} chính hãng giá hời",
+"Giá giảm cực mạnh – mua {name} càng sớm càng lời",
+"Rinh liền tay {name} chính hãng – siêu ưu đãi đang chờ",
+"Cơ hội có một không hai – {name} giảm khủng",
+"Giảm giá cực hot cho fan của {name}",
+"Mở sale toàn sàn – {name} chính hãng giá cực thấp",
+"Giá rẻ bất ngờ, {name} chính hãng chờ bạn săn",
+"Đặt nhanh – {name} chính hãng đang giảm cực sốc",
+"Siêu ưu đãi chỉ 24h – {name} giá hời khó tin",
+"Hàng hot nhất tuần – {name} chính hãng giảm sâu bất ngờ",
+"Săn giá hời cho {name} – cơ hội chỉ có hôm nay",
+"Chốt đơn nhanh tay, {name} đang giảm cực khủng",
+"Giá rẻ đến khó tin – {name} chính hãng đang hot",
+"Ưu đãi cực lớn – {name} chính hãng chờ bạn rước",
+"Deal khủng bất ngờ – {name} sale toàn sàn",
+"Hàng xịn {name} – mua ngay kẻo lỡ cơ hội",
+"Giảm sâu chạm đáy – {name} giá quá hời",
+"Đặt {name} ngay hôm nay, hưởng ưu đãi sốc",
+"Sản phẩm {name} đang giảm giá cực kỳ hấp dẫn",
+"Siêu sale chính hãng – {name} giá rẻ hết nấc",
+"Nhanh tay kẻo hết – {name} đang cháy hàng",
+"Giảm khủng chưa từng có – {name} hot trend 2025",
+"Deal cực hời – {name} chính hãng giá siêu tốt",
+"Giảm giá ngập tràn – {name} chính hãng đồng loạt sale",
+"Giá hời bất ngờ cho fan trung thành của {name}",
+"Mua {name} hôm nay – tiết kiệm cực lớn",
+"Ưu đãi có hạn – {name} giá tốt nhất trong năm",
+"Cực deal đang chờ – {name} giảm giá siêu sâu",
+"Cập bến kho sale – {name} chính hãng giá cực sốc",
+"Mở bát tháng mới với {name} – giá ưu đãi siêu ngon",
+"Chốt deal liền tay – {name} giá mềm chưa từng thấy",
+"Cực phẩm {name} chính hãng – giảm sâu tới bến",
+"Giá ưu đãi chạm sàn – {name} hot nhất hôm nay",
+"Sắm ngay {name}, nhận deal cực lời",
+"Đừng ngó lơ – {name} chính hãng đang giảm cực mạnh",
+"Mua {name} chính hãng hôm nay – giá giảm tới đáy",
+"Deal ngon ngất ngây – {name} giá hời siêu khủng",
+"Chương trình sốc: {name} giảm giá toàn sàn",
+"Cơn bão sale đổ bộ – {name} giá siêu rẻ",
+"Hàng hot {name} – giá cực ưu đãi chỉ trong hôm nay",
+"Cơ hội săn {name} chính hãng với giá cực lời",
+"Săn deal siêu tốc – {name} giảm đến không ngờ",
+"Mua {name} càng sớm, giá càng tốt",
+"Đại hạ giá toàn shop – {name} chính hãng siêu hot",
+"Chỉ còn vài suất ưu đãi cho {name}",
+"Mua ngay {name} – giá tốt bất ngờ đang chờ bạn",
+"Giảm giá sâu nhất tháng – {name} chính hãng siêu ưu đãi",
+"Săn deal vàng cho {name}, tiết kiệm cực lớn",
+"Đặc quyền hôm nay: {name} giảm giá cực hấp dẫn",
+"Giá ngon không tưởng – {name} chính hãng chỉ còn hôm nay",
+"Lướt thấy {name} là auto thả tim ❤️ – giá này mà không chốt thì hơi phí!",
+"Giá mềm như bánh flan 🍮 – {name} chính hãng đang chờ bạn rước!",
+"Đừng để {name} nằm giỏ quá lâu 😭 – sale xong là bay mất đó!",
+"Team săn sale đâu rồi, {name} đang xả hàng kìa 🔥",
+"Nghe nói ai chốt {name} hôm nay là hên cả tuần 😉",
+"Giảm giá sốc quá trời 😱 – {name} chính hãng rẻ như cho!",
+"Giá này không mua {name} là bỏ lỡ chân ái luôn á 😍",
+"Thề luôn, giá {name} này còn rẻ hơn ly trà sữa 🧋",
+"Chậm tay là out game 😤 – {name} chính hãng đang cháy hàng rồi!",
+"Ai chốt nhanh thì lời, ai chần chừ là tiếc 😆 – {name} siêu ưu đãi!",
+"Sale to bằng cái trời 🌤 – {name} chính hãng hạ giá cực mạnh!",
+"Deal ngon hơn người yêu cũ 💔 – {name} giá siêu hời luôn nha!",
+"Không tin nổi luôn 😱 – {name} giảm sâu hơn cả lòng đại dương!",
+"Cảnh báo: {name} đang hot, xem xong là auto muốn mua 😜",
+"Vừa đẹp, vừa rẻ, lại chính hãng – {name} chứ còn ai!",
+"Bấm vào xem thử thôi mà lỡ tay chốt {name} luôn 😅",
+"Mấy anh chị ơi, {name} giảm sốc quá, chậm tay là mất tiêu 🏃‍♀️",
+"Cảnh báo ví mỏng 💸 – {name} giá hời quá khó cưỡng!",
+"Mua {name} hôm nay, mai khỏi hối hận 😎",
+"Giảm giá thật hay mơ vậy trời 😍 – {name} chính hãng siêu rẻ luôn!",
+"Lướt Shopee thấy {name} giảm giá mà tim muốn rớt luôn 😍",
+"Ai đang on Shopee mà chưa chốt {name} là bỏ lỡ deal ngon nha 😜",
+"Mấy chị em ơi, Shopee báo tin vui nè – {name} đang sale siêu to khổng lồ 🎉",
+"Đang tám trên Shopee mà thấy giá {name} vậy là phải dừng tám để chốt đơn liền 🤭",
+"Hàng chính hãng {name} đang hot rần rần trên Shopee luôn đó 🔥",
+"Shopee réo tên bạn rồi kìa 😆 – {name} đang giảm giá cực hời!",
+"Coi chừng lướt Shopee xong auto nghèo vì {name} rẻ quá 😂",
+"Deal nóng hổi vừa thổi vừa mua 😍 – {name} chính hãng trên Shopee",
+"Bỏ qua {name} hôm nay, mai lên Shopee lại tiếc đứt ruột 😭",
+"Ai đang Shopee rảnh tay thì ghé liền, {name} đang sale shock kìa 🔥",
+"Báo động đỏ trên Shopee 🚨 – {name} giảm giá cực mạnh!",
+"Shopee hôm nay nhộn nhịp quá trời, {name} cháy đơn rồi kìa 💥",
+"Không nói nhiều, deal {name} này Shopee phải gọi là ‘đỉnh của chóp’ 🤩",
+"Tag ngay người yêu Shopee vào xem {name}, giá ngon quá nè 😆",
+"Shopee sáng nay toàn thấy người ta khoe chốt {name} 😭 mình chưa kịp mua!",
+"Shopee thông báo: {name} vừa cập bến sale siêu hot 🔥",
+"Cứ mở Shopee là thấy deal ngon – đặc biệt là {name} này luôn nha 💙",
+"Thời tiết nóng mà deal Shopee còn nóng hơn 🥵 – {name} chính hãng giảm cực sâu!",
+"Mấy bạn Shopee đừng ngủ quên, {name} đang cháy hàng rồi đó 🏃‍♀️",
+"Không đùa đâu nha, {name} đang là top trending Shopee luôn á 😍",
+"Trời ơi, hàng {name} em mới về, đẹp xuất sắc luôn 🥰 ai chốt trước em để riêng nè!",
+"Không dám nói quá chứ {name} lần này hot thiệt sự 🔥 chậm tay là hết hàng nha!",
+"Em nói thật, giá {name} này mà không mua là uổng lắm luôn á 😭",
+"Mấy chị ơi, {name} chính hãng em đang sale nè, giá hời quá trời luôn 😍",
+"Tay em run khi thấy giá {name} luôn 🥲 – quá rẻ, chốt nhanh kẻo hết!",
+"Còn đúng vài món {name} thôi đó nha 😭 ai thương thì chốt liền tay giúp em!",
+"Khách quen Shopee nhà em hôm nay ai cũng chốt {name}, còn chị chưa chốt là thiệt đó 😆",
+"Hàng xịn {name} mà giá thì dễ thương lắm nè 💕 nhắn em liền để em giữ cho nha!",
+"Em không nói nhiều, {name} giảm giá thật rồi nha 😱 ai tin nhắn đầu tiên là có deal tốt nhất!",
+"Ai hỏi hoài {name} đâu thì nay em báo tin vui nè 🎉 – hàng về full mẫu luôn!",
+"Chốt {name} sớm đi mấy chị, mai em hết hàng là tiếc lắm đó 😅",
+"Em nói thiệt, deal {name} này ngon hơn người yêu cũ 😜",
+"Shopee nhà em đang cháy đơn vì {name} đó nha, ai chưa chốt thì lẹ lên 💨",
+"Cả Shopee nhà em đang nhộn nhịp vì {name}, ai chưa có là lạc hậu liền 😆",
+"Hàng chính hãng {name}, giá em thương lắm 🥹 chốt sớm em free ship cho luôn!",
+"Mấy anh chị đừng lướt qua, {name} đang sale hời lắm á 😍",
+"Hôm nay em mood đẹp nên giảm thêm cho ai chốt {name} sớm nha 😘",
+"Chỉ còn vài chiếc {name} cuối cùng thôi đó 😭 – ai cần em giữ giùm liền!",
+"Em vừa khui thùng {name}, mùi hàng mới thơm phức luôn 😆 ai chốt thì em quay video gửi liền!",
+"Cảnh báo: {name} nhà em đang cháy đơn 🔥 – ai lỡ tay chậm là đợi chuyến sau luôn nha!",
+"Đừng lướt nữa 😤 – quay lại chốt {name} liền, kẻo mai hết em không cứu được đâu nha!",
+"Cảnh báo cháy đơn 🔥 – ai chưa chốt {name} là auto tiếc luôn á!",
+"Giá này mà không chốt là giận đó nha 😭 – em nói thiệt luôn á!",
+"Mấy anh chị ơi, {name} đang hot hòn họt nè 🔥 chốt nhanh kẻo trễ!",
+"Còn đúng 5 cái {name} thôi đó 😱 – em không dọa đâu, thật luôn á!",
+"Chốt liền tay đi, deal {name} này không lặp lại lần 2 đâu 😜",
+"Em không nói nhiều đâu, ai chốt sớm là lời to luôn 💰",
+"Mấy chị mà lăn tăn là mất liền á 😭 – {name} đang cháy hàng thật sự!",
+"Ai đọc tới đây mà chưa chốt {name} thì gan thiệt đó 😆",
+"Chốt lẹ đi nè, lát em khóa đơn rồi khỏi kêu em giữ nha 😏",
+"Thề luôn, ai chốt {name} hôm nay là lời gấp đôi mai luôn 😎",
+"Không chốt bây giờ, lát thấy 'hết hàng' lại khóc ròng đó 🥹",
+"Nhanh tay kẻo bay, {name} bên em chạy đơn như bay luôn 🚀",
+"Em đang gói hàng {name} mỏi tay luôn 😅 – ai chưa có thì chốt lẹ em giữ cho nha!",
+"Ai chốt đầu tiên em tặng thêm quà xịn luôn 🎁 – nhanh tay nào!",
+"Chốt liền đừng nghĩ nhiều – {name} hot vậy không mua thì tiếc đó 😍",
+"Đừng chờ mai, {name} hôm nay sale cực khủng 😭 – mai là giá khác liền!",
+"Inbox em liền tay nha 💬 – chậm là khỏi còn {name} mà chốt luôn á!",
+"Chốt lẹ giúp em, {name} này bán nhanh như bánh mì nóng luôn 🥐",
+"Chốt càng nhanh, giá càng mềm nha 😜 – {name} chính hãng xịn khỏi bàn!",
+"Còn đúng vài món {name} cuối cùng thôi nha 😭 – ai chưa chốt là mai khóc thật đó!",
+"Đang gói đơn mà tay run luôn 🫣 – {name} bán nhanh quá trời ơi!",
+"Mấy anh chị đừng lăn tăn nữa, {name} này mà hết em không biết tìm đâu ra luôn 😭",
+"Chốt lẹ kẻo hối hận, {name} bên em trôi nhanh hơn người yêu cũ 💨",
+"Thề luôn, deal {name} này không chốt là ngủ cũng thấy tiếc 😅",
+"Em cảnh báo trước rồi nha 😆 – {name} sắp cháy hàng thật sự đó!",
+"Ai đọc tới đây mà chưa nhắn em chốt {name} là gan to dữ luôn 😜",
+"Chốt lẹ đi mấy chị ơi, lát em off Shopee là hết sạch luôn đó 😭",
+"Giá này em mà không đăng sớm là bị khách la 😭 – {name} rẻ bất ngờ luôn!",
+"Mấy đơn {name} bay vèo vèo 🚀 – ai chưa chốt là trễ chuyến nha!",
+"Ai chốt nhanh em thương, em tặng thêm món nhỏ xinh luôn 🎁",
+"Đừng để em phải nhắn lại 'hết hàng rồi nha' 😢 – {name} sắp bay hết!",
+"Em nói nhỏ thôi 🤫 – {name} hôm nay sale bí mật, chốt nhanh mới kịp!",
+"Không nói nhiều, giá {name} này chỉ có hôm nay – mai là hết sạch 😭",
+"Ai chốt trước em ship trước nha 🚚 – chậm tay là phải đợi đợt sau luôn đó!",
+"Chốt liền tay đi mấy chị ơi 😍 – hàng xịn, giá rẻ, em nói thiệt luôn á!",
+"Đơn {name} chạy nhanh như tin đồn luôn 😆 – ai chưa chốt là mất liền nha!",
+"Inbox em lẹ kẻo trễ 💬 – {name} đang cháy hàng quá trời luôn!",
+"Giá này mà không chốt là em dỗi luôn á 😤",
+"Nhanh tay giúp em chốt đơn nha 😘 – {name} hôm nay hot quá trời luôn!"
+];
+
+const hashtagPool = [
+  "#KOLUytin",
+  "#HangMoiVe",
+  "#Shopxuhuong",
+  "#LuotVuiMuaLien",
+  "#VideohangTieudung",
+  "#VideohangDoisong",
+  "#VideohangGiadung",
+  "#VideohangMypham",
+  "#VideohangLamdep",
+  "#sandealcungkol",
+  "#KOLreview",
+  "#ShopeeVideo",
+  "#ShopeeCreator",
+  "#VideoReview",
+  "#SanSale",
+  "#DealHot",
+  "#GiaTot"
+];
+
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function randHashtags(n=3){
+  const pool=[...hashtagPool], out=[];
+  while(out.length<n && pool.length){
+    out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  return out.join(" ");
+}
+function generateCaption(name){
+  return rand(captionTemplates).replace("{name}",name) + " " + randHashtags(3);
+}
+
+/* ================= MOBILE SAFE COPY ================= */
+function copyToClipboard(text){
+  if(!text) return false;
+  try{
+    const ta=document.createElement("textarea");
+    ta.value=text;
+    ta.style.position="fixed";
+    ta.style.top="0";
+    ta.style.left="0";
+    ta.style.opacity="0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0,ta.value.length);
+    const ok=document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){
+    console.error("COPY FAIL",e);
+    return false;
+  }
+}
+
+/* ================= UI ================= */
+const rowsEl=document.getElementById("rows");
+const summary=document.getElementById("summary");
+const currentName=document.getElementById("currentName");
+const captionText=document.getElementById("captionText");
+
+function save(){
+  localStorage.setItem("posted",JSON.stringify(posted));
+  localStorage.setItem("history",JSON.stringify(history));
+}
+
+function updateSummary(){
+  summary.textContent=
+    "ĐÃ ĐĂNG "+
+    Object.keys(posted).filter(i=>posted[i]).length+
+    "/"+PRODUCTS.length+" SẢN PHẨM";
+}
+
+function render(){
+  rowsEl.innerHTML="";
+  const q=document.getElementById("search").value.toLowerCase();
+  PRODUCTS
+    .filter(p=>!q||p.name.toLowerCase().includes(q)||("#"+p.id)===q)
+    .forEach(p=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td><div class="dot ${posted[p.id]?'posted':''}"></div></td>
+        <td>#${p.id}</td>
+        <td>${p.name}</td>
+        <td class="actions">
+          <button class="blue" onclick="show(${p.id})">Hiển thị</button>
+          <button class="blue" onclick="unmark(${p.id})">Đánh dấu chưa đăng</button>
+        </td>`;
+      rowsEl.appendChild(tr);
+    });
+}
+
+function show(id){
+  const p=PRODUCTS.find(x=>x.id===id);
+  current=id;
+  currentName.textContent="Sản phẩm "+id;
+  captionText.value=generateCaption(p.name);
+  history.unshift("Hiển thị SP "+id);
+  save();render();
+}
+
+function unmark(id){
+  posted[id]=false;
+  save();render();updateSummary();
+}
+
+/* ================= EVENTS ================= */
+document.getElementById("randomBtn").onclick=()=>{
+  const list=PRODUCTS.filter(p=>!posted[p.id]);
+  const src=list.length?list:PRODUCTS;
+  show(src[Math.floor(Math.random()*src.length)].id);
+};
+
+document.getElementById("copyVideo").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  copyToClipboard(p.drive);
+  posted[current]=true;
+  updateSummary();save();
+};
+
+document.getElementById("copyShopee").onclick=()=>{
+  if(!current)return;
+  copyToClipboard(PRODUCTS.find(p=>p.id===current).shopee);
+};
+
+document.getElementById("copyCaption").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  const cap=generateCaption(p.name);
+  captionText.value=cap;
+  copyToClipboard(cap);
+};
+
+document.getElementById("toggleCaption").onclick=()=>captionBox.classList.toggle("hidden");
+document.getElementById("toggleHistory").onclick=()=>historyBox.classList.toggle("hidden");
+document.getElementById("clearHistory").onclick=()=>{
+  history=[];posted={};
+  save();render();updateSummary();
+};
+
+document.getElementById("search").oninput=render;
+
+updateSummary();render();
+</script>
+
+</body>
+</html>
