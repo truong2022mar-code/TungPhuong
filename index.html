@@ -1,0 +1,461 @@
+<!doctype html>
+<html lang="vi">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>Sora Tool</title>
+
+<style>
+body{margin:0;background:#f2f2f2;font-family:system-ui}
+.phone{max-width:420px;margin:auto;background:#fff;min-height:100vh;border-radius:14px;box-shadow:0 10px 30px rgba(0,0,0,.15)}
+header{text-align:center;padding:14px}
+#summary{font-weight:900;color:#b30000;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;padding:0 12px}
+button{border:0;border-radius:8px;padding:10px;font-weight:700;color:#fff;cursor:pointer}
+.red{background:#8b0000}
+.blue{background:#0b84ff}
+.label{text-align:center;font-weight:700;padding:10px}
+main{padding:12px}
+.search{width:100%;padding:8px;border-radius:8px;border:1px solid #ddd;margin-bottom:8px}
+table{width:100%;border-collapse:collapse}
+td{padding:6px;font-size:14px;border-bottom:1px solid #eee}
+.actions{display:flex;flex-direction:column;gap:4px}
+.dot{width:10px;height:10px;border-radius:50%;background:#ccc}
+.dot.posted{background:green}
+textarea{width:100%;height:70px;border-radius:8px;border:1px solid #ddd;padding:8px}
+.hidden{display:none}
+.hist{max-height:120px;overflow:auto;border:1px dashed #ddd;border-radius:6px;padding:6px}
+</style>
+</head>
+
+<body>
+<div class="phone">
+
+<header>
+  <div id="summary">ĐÃ ĐĂNG 0/311 SẢN PHẨM</div>
+
+  <div class="grid">
+    <button class="red" id="randomBtn">Random Sản phẩm</button>
+    <div class="label" id="currentName">Sản phẩm -</div>
+
+    <button class="blue" id="copyVideo">Copy Link Video</button>
+    <button class="blue" id="importPosted">Nhập SP đã đăng</button>
+
+    <button class="blue" id="copyCaption">Copy Caption</button>
+    <button class="blue" id="copyPosted">Copy SP đã đăng</button>
+
+    <button class="blue" id="copyShopee">Copy Link Shopee</button>
+    <button class="blue" id="toggleHistory">Lịch sử</button>
+
+    <button class="blue" id="toggleCaption">Caption/Tên SP</button>
+    <button class="blue" id="clearHistory">Xóa Lịch sử</button>
+  </div>
+</header>
+
+<main>
+  <div id="captionBox" class="hidden">
+    <textarea id="captionText" readonly></textarea>
+  </div>
+
+  <div id="historyBox" class="hidden">
+    <div class="hist" id="historyList"></div>
+  </div>
+
+  <input class="search" id="search" placeholder="Tìm theo số (#1) hoặc từ khóa">
+
+  <table>
+    <tbody id="rows"></tbody>
+  </table>
+</main>
+
+</div>
+
+<script>
+/* ================= DATA ================= */
+const PRODUCTS = [{"id":1,"name":"Muỗng sứ Minh Long Tulip IFP Awakening","drive":"https://drive.google.com/file/d/1DPrmCUuYpkMjwvk2cP10Q-gmpU5qFcfZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/51850575705"},{"id":2,"name":"Lọ xay tiêu cầm tay Hobby thủy tinh","drive":"https://drive.google.com/file/d/1ABwXoanvaPSj8VZKqSSvla1TAf1FNMKy/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/1602413299"},{"id":3,"name":"Chén cơm sứ Minh Long Camellia Diệp Lục","drive":"https://drive.google.com/file/d/1sAwWA16qeam0ifaqiS7jmT2gk1tW31ki/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/18662510857"},{"id":4,"name":"Bông lau cây lau nhà MyJae 360 độ","drive":"https://drive.google.com/file/d/1TJspCqyzv7xtiAseR5adMFH2TZ1Zg7tU/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/40753517348"},{"id":5,"name":"Bông lau cây lau nhà MyJae 360 độ","drive":"https://drive.google.com/file/d/1lT0GnlSuL6ZnpATL1yFhYkOrtcKkcv0l/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/40753517348"},{"id":6,"name":"Ly sứ dưỡng sinh Minh Long 0.48L","drive":"https://drive.google.com/file/d/10XxyereWdkXTEOjwkDPvy4keWr1mp9eX/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/27038709122"},{"id":7,"name":"Ly sứ dưỡng sinh Minh Long 0.48L","drive":"https://drive.google.com/file/d/1DNautCwfNeID6jH0MonX40swSkeQBZAp/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/27038709122"},{"id":8,"name":"Quạt sạc cầm tay Comet CRF1104 Tai Mèo","drive":"https://drive.google.com/file/d/13776D20NIDrVsSToyP53CWi8m4o0YER7/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/25670212826"},{"id":9,"name":"Quạt sạc cầm tay Comet CRF1104 Tai Mèo","drive":"https://drive.google.com/file/d/1Ly3AnJPgGfMQ-KKinAEj3LRT3BEomdxv/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/25670212826"},{"id":10,"name":"Tô dĩa sứ Minh Long Jasmine Chỉ Vàng","drive":"https://drive.google.com/file/d/1C5f9ejoz4RQMWscVyAZ7_1121K1jbM2Y/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/17597545594"},{"id":11,"name":"Đèn LED âm trần Philips DL260 7W/11W","drive":"https://drive.google.com/file/d/1JoZqSj5n9ZKhG40wxOpb5dZ-KmDWOL2P/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/40509961872"},{"id":12,"name":"Đèn LED âm trần Philips DL260 7W/11W","drive":"https://drive.google.com/file/d/1UKhND9_ICfOOLFC26oGncKgVNnhPnt-K/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/40509961872"},{"id":13,"name":"Combo 2 miếng rửa chén sợi tre MyJae","drive":"https://drive.google.com/file/d/1QfBPDBNgUcnmVj-AuR0zlMbpHHGeybyv/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/29211546147"},{"id":14,"name":"Chén cơm sứ Minh Long Mẫu Đơn Trắng","drive":"https://drive.google.com/file/d/1N97bQ8A8m5MQ-lTjPwxqPvaSjlCRZyaZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/27107442406"},{"id":15,"name":"Bộ 4 bóng LED âm trần Philips 7W/10W","drive":"https://drive.google.com/file/d/1d3Z6np_jNwxQVVzZcdJsHlwFTU3eJq0Z/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/29365840609"},{"id":16,"name":"Bàn chải tắm chó mèo Julyhouse tạo bọt","drive":"https://drive.google.com/file/d/1k56VrQfC-aRhLbWNMwy0d4HxFPCWqney/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/20195667767"},{"id":17,"name":"Chảo đúc sâu Green Cook GCP236 men gốm","drive":"https://drive.google.com/file/d/11M0urmIwj2OSbbloaM8YjCO57mjGb4gO/view?usp=drivesdk","shopee":"https://shopee.vn/product/73224788/25504834276"},{"id":18,"name":"Chảo đúc sâu Green Cook GCP236 men gốm","drive":"https://drive.google.com/file/d/1iJ0FJ5h98fnF2-vHhCidzqG-Z_4mzsRY/view?usp=drivesdk","shopee":"https://shopee.vn/product/73224788/25504834276"},{"id":19,"name":"Bọt biển rửa chén kháng khuẩn MyJae 3 miếng","drive":"https://drive.google.com/file/d/1f_d0OO5NAJP2V2ZPjQe1jiMn6XEt8zkC/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/23218654597"},{"id":20,"name":"Bộ chặn cửa nam châm Hobby CC1","drive":"https://drive.google.com/file/d/1fL8_TxOZvCdhDPAp1zt-oHbHE6jEAvtx/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2006132562"},{"id":21,"name":"Bộ chặn cửa nam châm Hobby CC1","drive":"https://drive.google.com/file/d/1tuGx29at2bzmJ1AGUcT3PEOewJ3zXVdE/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2006132562"},{"id":22,"name":"Bộ chặn cửa nam châm Hobby CC1","drive":"https://drive.google.com/file/d/1YoIBUlyTx3RaeegdfEhm8K0_tmIm5vNZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2006132562"},{"id":23,"name":"Miếng dán Inox 304 kèm keo Hobby Pass","drive":"https://drive.google.com/file/d/1YQHiI8Zei3j2FHOwjoQnOkXsEjkatf8J/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/4870922119"},{"id":24,"name":"Miếng dán Inox 304 kèm keo Hobby Pass","drive":"https://drive.google.com/file/d/1qsg_fnnqjbiITUurEyOsGTwX2WlvmfZ-/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/4870922119"},{"id":25,"name":"Xịt khử mùi ô tô Julyhouse 150ml","drive":"https://drive.google.com/file/d/1oFEi4k3ydvlTfk5GRLpSFvV_xKhWJrKO/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/28691162215"},{"id":26,"name":"Xịt khử mùi ô tô Julyhouse 150ml","drive":"https://drive.google.com/file/d/1P1Iu1_ULtoH75kI-tJ5U4HAU03m-rsFh/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/28691162215"},{"id":27,"name":"Tô dĩa sứ Minh Long Jasmine Vinh Quy","drive":"https://drive.google.com/file/d/12vl90q7UXbm6kX0I8L4C3SGbSLWFCIB-/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/24455655485"},{"id":28,"name":"Tô dĩa sứ Minh Long Jasmine Vinh Quy","drive":"https://drive.google.com/file/d/1cekMk0xuh12rgkCJkkcPYV9RldFmLv00/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/24455655485"},{"id":29,"name":"Cây chà bồn cầu MyJae 2 đầu","drive":"https://drive.google.com/file/d/1DrYSh5wtgWis6SsF72TeQ6KA1mJwm_LK/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/21835286420"},{"id":30,"name":"Cây chà bồn cầu MyJae 2 đầu","drive":"https://drive.google.com/file/d/12Mxfs8LHSQ7nof9LErzVAShgaQmGYy16/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/21835286420"},{"id":31,"name":"Găng tay TPE kháng khuẩn MyJae 40 cái","drive":"https://drive.google.com/file/d/1WliEPADZmTNmHx8jSxlLbSFqAGZVUTJC/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/19935324866"},{"id":32,"name":"Giá treo vòi sen 2 nấc Hobby GVSK2","drive":"https://drive.google.com/file/d/1R9qqWUDNUx99Q9o8CXtUF7jpdv1pw7nl/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/25571483497"},{"id":33,"name":"Giá treo vòi sen 2 nấc Hobby GVSK2","drive":"https://drive.google.com/file/d/1_ZxbMXCCtiHluVC3nbfDjw0UkGmYuA7C/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/25571483497"},{"id":34,"name":"Combo 4 bodymist cho chó mèo Julyhouse","drive":"https://drive.google.com/file/d/13DQ9YgY5jfQ_mVWVBXLZbPFCCLS5PJV-/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/41677453402"},{"id":35,"name":"Combo 4 bodymist cho chó mèo Julyhouse","drive":"https://drive.google.com/file/d/1MprqGXbVjK4Ap8d0id92BtEn51O_LTch/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/41677453402"},{"id":36,"name":"Ổ cắm đa năng Comet 2500W dây dài","drive":"https://drive.google.com/file/d/195aSYanbFzOJWOvUKIYi0AxfM09QG5YN/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/28615036082"},{"id":37,"name":"Ổ cắm đa năng Comet 2500W dây dài","drive":"https://drive.google.com/file/d/1gunD3ypAj3sjqIzYOpmUBZ5AunFSQm6u/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/28615036082"},{"id":38,"name":"Bình lọc nước Brita Flow 8.2L","drive":"https://drive.google.com/file/d/10ECWGbwjz9_Ax1p6DSJh0I-_Jx2b7sUT/view?usp=drivesdk","shopee":"https://shopee.vn/product/93765933/1580225644"},{"id":39,"name":"Bình lọc nước Brita Flow 8.2L","drive":"https://drive.google.com/file/d/1G1qf8w18HWtCl6stYvqIYpxZiFto0uq7/view?usp=drivesdk","shopee":"https://shopee.vn/product/93765933/1580225644"},{"id":40,"name":"Giá treo tay sen điều chỉnh Hobby GVSK","drive":"https://drive.google.com/file/d/1Ny-pIqrzNl7_hEo5T1T8tIjbcCJCWGH4/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/24959173008"},{"id":41,"name":"Giá treo tay sen điều chỉnh Hobby GVSK","drive":"https://drive.google.com/file/d/1jn7lEY1lTzfyY3qxRZ4AC9quIeirhhyw/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/24959173008"},{"id":42,"name":"Bông lau thay thế MyJae sợi Microfiber","drive":"https://drive.google.com/file/d/11AZTKLke6lEejdCUR1uHxjMDE6PQZfEY/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/3561867115"},{"id":43,"name":"Bông lau thay thế MyJae sợi Microfiber","drive":"https://drive.google.com/file/d/1on43gSNvpt7oy4x65gqdlifizYrKoMc8/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/3561867115"},{"id":44,"name":"Bông lau thay thế MyJae sợi Microfiber","drive":"https://drive.google.com/file/d/1qLw4O7_W13Hjsn14KHjZAgE49i1dAHse/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/3561867115"},{"id":45,"name":"Bông lau thay thế MyJae sợi Microfiber","drive":"https://drive.google.com/file/d/1JS3kDyXjLGwONx69KJJL4-PpCsVlDSzh/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/3561867115"},{"id":46,"name":"Bông lau thay thế MyJae sợi Fiber","drive":"https://drive.google.com/file/d/1JngthNNwWKQY1sWYexrn-WnUcaUMJQyg/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/14634777064"},{"id":47,"name":"Kẹp bát đĩa chống nóng Hobby KI4","drive":"https://drive.google.com/file/d/1NRP5Y9wNbcTBj7bcr1xC5Sp2fhsUbQzH/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/26630772232"},{"id":48,"name":"Kẹp bát đĩa chống nóng Hobby KI4","drive":"https://drive.google.com/file/d/124QLznpAlKYPZ0jRTribu_Z9U4z1m2-C/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/26630772232"},{"id":49,"name":"Bộ vòi xịt vệ sinh lò xo Hobby VSR2","drive":"https://drive.google.com/file/d/1xAzwKwIKBbvEUwWPckga7NQPUOmlnd7x/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/14079598499"},{"id":50,"name":"Bộ vòi xịt vệ sinh lò xo Hobby VSR2","drive":"https://drive.google.com/file/d/1eB13yhIfj0FccmzeP4FTLSnw-J8SONA9/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/14079598499"},{"id":51,"name":"Chốt cửa dây xích an toàn Hobby KLC","drive":"https://drive.google.com/file/d/1lUKPjRaX49w4UfrueAcmBVasDrznLSpZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2609898853"},{"id":52,"name":"Xịt phòng tinh dầu sả chanh Julyhouse 50ml","drive":"https://drive.google.com/file/d/1s2qrpzoRuCnWuJ6syW2beAkiA027Y7nc/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/1639870735"},{"id":53,"name":"Xịt phòng tinh dầu Julyhouse 280ml","drive":"https://drive.google.com/file/d/1f2OwGwUmn-AMHG1bNiE52s7y769YMAPA/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/22189394104"},{"id":54,"name":"Tô dĩa sứ Minh Long Đồng Tâm Xanh","drive":"https://drive.google.com/file/d/14mj5w-c9qN25K4KLyq_IH0q10Mgywxzl/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/24985108166"},{"id":55,"name":"Tô dĩa sứ Minh Long Đồng Tâm Xanh","drive":"https://drive.google.com/file/d/1tocVMzn1EC7SARbMcsySxpE7_ktoZxph/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/24985108166"},{"id":56,"name":"Nồi sứ dưỡng sinh Minh Long Vesta 2.0L","drive":"https://drive.google.com/file/d/1ewNfF916T8zBJrSJyXClT6KzstxWIaZa/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/6250237969"},{"id":57,"name":"Tô dĩa tròn sứ Minh Long Hoa May Mắn","drive":"https://drive.google.com/file/d/19rVYz-AqWaxP212KQlt1SNEItaW_T77Z/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/22265780600"},{"id":58,"name":"Tô dĩa tròn sứ Minh Long Hoa May Mắn","drive":"https://drive.google.com/file/d/1bZPPRhRPzC-WD_Xp_7YgheoswAgHkrLc/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/22265780600"},{"id":59,"name":"Tô dĩa tròn sứ Minh Long Hoa May Mắn","drive":"https://drive.google.com/file/d/1zfW2M1dZgV7DMpe2XPwFlWDmW575ik1o/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/22265780600"},{"id":60,"name":"Combo 8 móc treo đồ dán tường Hobby","drive":"https://drive.google.com/file/d/1CL9pRf-_JrMqQVgBDhG--voycb5OzzTp/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/1631141299"},{"id":61,"name":"Combo 8 móc treo đồ dán tường Hobby","drive":"https://drive.google.com/file/d/1HbXbjXH397Z1Q_NRPOENHkIkuTp_YO5X/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/1631141299"},{"id":62,"name":"Combo 8 móc treo đồ dán tường Hobby","drive":"https://drive.google.com/file/d/1NCo-jNYPCCCfhyliL9fQzSe10a80aWqG/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/1631141299"},{"id":63,"name":"Xịt thơm quần áo Julyhouse 20/280ml","drive":"https://drive.google.com/file/d/1d-8CBTlCQYXqm7L6yGFWk0m7QyKD9MyP/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/4659237606"},{"id":64,"name":"Dĩa sứ Minh Long Jasmine Chỉ Xanh Lá","drive":"https://drive.google.com/file/d/12n4aZvDuA75kHDXv05MWOlt3TKgjZuTy/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/23765775923"},{"id":65,"name":"Dĩa sứ Minh Long Jasmine Chỉ Xanh Lá","drive":"https://drive.google.com/file/d/1EvdKvwlplQ_oCa-sNMomc-s0RkxQ17DJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/23765775923"},{"id":66,"name":"Dĩa sứ Minh Long Jasmine Chỉ Xanh Lá","drive":"https://drive.google.com/file/d/14ysjGNfcRw3ELv6c_ewAFzH7ldoNZnR4/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/23765775923"},{"id":67,"name":"Ca tròn 0.35L Misc Assortment Đại Dương","drive":"https://drive.google.com/file/d/1wZFO0UlGTflT3YY_ulX3Z3ysTvRF_VO1/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/29642662580"},{"id":68,"name":"Ca tròn 0.35L Misc Assortment Đại Dương","drive":"https://drive.google.com/file/d/1areoLD7_n46stEYKy4HUnLhoPWLS9Bnl/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/29642662580"},{"id":69,"name":"Bóng LED Bulb Comet 12W tiết kiệm điện","drive":"https://drive.google.com/file/d/1_SEV5ICJILuA0IpQiShhq_wwvMm448xe/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/1757287103"},{"id":70,"name":"Bóng LED Bulb Comet 12W tiết kiệm điện","drive":"https://drive.google.com/file/d/1zfQcRlcvhk3Qel9py5yCuQe2Fi_RBiRl/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/1757287103"},{"id":71,"name":"Vòi xịt vệ sinh Inox 304 Hobby VSR10","drive":"https://drive.google.com/file/d/1Pcmu2MIJbkeT5OwhaSYjuUDCoSvhZKhf/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/26453256463"},{"id":72,"name":"Đèn pin đội đầu Comet CRT1613 2W","drive":"https://drive.google.com/file/d/1LEj3w62R8YGXioFLVyCgbWsqnJOWMcLi/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/1787630881"},{"id":73,"name":"Đèn pin đội đầu Comet CRT1613 2W","drive":"https://drive.google.com/file/d/1qT79jTLcijsVn15tnkSOZeHALjFXECuq/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/1787630881"},{"id":74,"name":"Ca tròn 0.35L Misc Assortment Đại Dương","drive":"https://drive.google.com/file/d/1x76sXZmeSL1UJVbzpaTngFeRxIx292b1/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/26092692637"},{"id":75,"name":"Ca tròn 0.35L Misc Assortment Đại Dương","drive":"https://drive.google.com/file/d/1_jg5sFcenTwCZCyXefKUx6je4ByjwAFm/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/26092692637"},{"id":76,"name":"Vòi rửa chén lạnh Inox 304 Hobby RL1","drive":"https://drive.google.com/file/d/17pGbwJXgdK01qKBiUvo5OcWYZuMBLYJB/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/20745201393"},{"id":77,"name":"Nước rửa chén Julyhouse Bồ Hòn Bạc Hà","drive":"https://drive.google.com/file/d/1ak7ndD5aAHNp4eHuTPmNaXuTG3csW1Sw/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/3937418585"},{"id":78,"name":"Nước rửa chén Julyhouse Bồ Hòn Bạc Hà","drive":"https://drive.google.com/file/d/1HxKdjqgWyb_ihBq3PdnN59-woFSlJNUr/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/3937418585"},{"id":79,"name":"Vòi rửa chén lạnh 2 đầu Hobby LX2D","drive":"https://drive.google.com/file/d/1tyvSdy3X49NwYKjOFkhX5ClPDFCS9mfK/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/9649681192"},{"id":80,"name":"Giá giữ vòi sen dán tường Hobby GVSI","drive":"https://drive.google.com/file/d/1OkydhD0PEmPgaLNamJJbEGTUlomSR2zw/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/3601282220"},{"id":81,"name":"Đèn LED âm trần Philips vuông DN027B G3","drive":"https://drive.google.com/file/d/1jKvr7s-7bdRSTrfGO09C1ZYhXNPVnAmk/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/22339928097"},{"id":82,"name":"Đèn LED âm trần Philips vuông DN027B G3","drive":"https://drive.google.com/file/d/1aDLjNx1Zivvj5U-YBG8z6MW7xen0sKSf/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/22339928097"},{"id":83,"name":"Đèn LED âm trần Philips vuông DN027B G3","drive":"https://drive.google.com/file/d/1Zj16rFpMdfjFIUOmaaAOuK-2eqlKdzG7/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/22339928097"},{"id":84,"name":"Đầu vặn vít ngắn Bosch Expert","drive":"https://drive.google.com/file/d/11oJyvXFziPzmpdaVUZJXoYkqI0XZCkl4/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24319180320"},{"id":85,"name":"Đầu vặn vít ngắn Bosch Expert","drive":"https://drive.google.com/file/d/1LDd6R5IkgnE7rklWwVxCcrNwWXaj8fgX/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24319180320"},{"id":86,"name":"Vòi bơm nước rửa chén Hobby NRC5","drive":"https://drive.google.com/file/d/19BgLviQgQyJY82zFV0D0fsyr3RogAyJi/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/20089156975"},{"id":87,"name":"Vòi bơm nước rửa chén Hobby NRC5","drive":"https://drive.google.com/file/d/1vZ_L7FyyyscxcqITBUdphPiDCqr9ykur/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/20089156975"},{"id":88,"name":"Vòi bơm nước rửa chén Hobby NRC5","drive":"https://drive.google.com/file/d/1X9U9ihwASAaUKobB6DKQE21AS-24ri_2/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/20089156975"},{"id":89,"name":"Vòi bơm nước rửa chén Hobby NRC5","drive":"https://drive.google.com/file/d/1PftLoPOFeSZwc5BoEo4OnsGW1ZGvz_9L/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/20089156975"},{"id":90,"name":"Dây sen lò xo vòi xịt Hobby SLX","drive":"https://drive.google.com/file/d/1lf5X28D45wWd9hYViJjVLOYJljLKsAkl/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/22372140173"},{"id":91,"name":"Dây sen lò xo vòi xịt Hobby SLX","drive":"https://drive.google.com/file/d/1XdTWpfmpLJYc9SLEFd4ay5zXsnyXWu3d/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/22372140173"},{"id":92,"name":"Combo 2 xịt phòng sả chanh Julyhouse","drive":"https://drive.google.com/file/d/16um6JUciaiK9pX3zk-oFK-tIOf7206bt/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/6644432143"},{"id":93,"name":"Tinh dầu thiên nhiên Julyhouse 10ml","drive":"https://drive.google.com/file/d/16fnQoHQ7IK6NTCc27as8wbZKe7A6fSH7/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/11013190380"},{"id":94,"name":"Tinh dầu thiên nhiên Julyhouse 10ml","drive":"https://drive.google.com/file/d/1-kuXSmoxc48Fv2xPm4hrAOts18JZN2Sy/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/11013190380"},{"id":95,"name":"Bóng LED Bulb trụ công suất lớn Comet","drive":"https://drive.google.com/file/d/1kky72TkiqjIyXL9gOAiFHDgdxTzqyDuM/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/42567596097"},{"id":96,"name":"Hộp 3 đĩa lọc Brita MicroDisc","drive":"https://drive.google.com/file/d/1rbBfZ2niN15WaFjXzS6DJlUpX91q80Yi/view?usp=drivesdk","shopee":"https://shopee.vn/product/93765933/1569354985"},{"id":97,"name":"Hộp 3 đĩa lọc Brita MicroDisc","drive":"https://drive.google.com/file/d/11o9mhuFRwamtdBIPpYwwiBJ8eRpHF-xX/view?usp=drivesdk","shopee":"https://shopee.vn/product/93765933/1569354985"},{"id":98,"name":"Kẹp bát đĩa chống nóng Hobby KI1","drive":"https://drive.google.com/file/d/1Tscr3P4n1bzO7rc9hj3T-lTossqOJ9VJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/25910430276"},{"id":99,"name":"Kẹp bát đĩa chống nóng Hobby KI1","drive":"https://drive.google.com/file/d/112nv8d6C-lgAHs0lT3wjCNOXfb407VxA/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/25910430276"},{"id":100,"name":"Vòi xả hồ máy giặt Hobby VIN3","drive":"https://drive.google.com/file/d/1YCqtXgC-pOWV4rmbsZJUVJ9xSKnbDrrE/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/21089647386"},{"id":101,"name":"Máy mài góc Bosch GWS 700 tặng đá","drive":"https://drive.google.com/file/d/1Ga6sjSuyTR94lqYceG38W_TOthVRNtgF/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/25088621832"},{"id":102,"name":"Máy mài góc Bosch GWS 700 tặng đá","drive":"https://drive.google.com/file/d/1AklrasJiYIxkLZoog1unevQOqjNCQj1g/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/25088621832"},{"id":103,"name":"Đèn bàn học Comet CT411 kèm bóng","drive":"https://drive.google.com/file/d/1PCRESHHjioJWig8MsBpmtMRPaa4rBCTb/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/6241593440"},{"id":104,"name":"Rổ treo góc chậu rửa Hobby KGC1","drive":"https://drive.google.com/file/d/1-rRst5iPdSeRTGECXCDj0_iP2LxrHo6X/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/19143566405"},{"id":105,"name":"Rổ treo góc chậu rửa Hobby KGC1","drive":"https://drive.google.com/file/d/1fjqfJsAXaVeVqXjV29DO7-KUycZu2wo5/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/19143566405"},{"id":106,"name":"Nước rửa chén Julyhouse 500ml Bồ Hòn","drive":"https://drive.google.com/file/d/1KqOV6TEOQo0fp0kxszOZYgqP6uoDmyXf/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/9088995718"},{"id":107,"name":"Nước rửa chén Julyhouse 500ml Bồ Hòn","drive":"https://drive.google.com/file/d/16eXNRRqufv7DA5383a5mMKUcTJ_7wCLo/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/9088995718"},{"id":108,"name":"Nước rửa chén Julyhouse 500ml Bồ Hòn","drive":"https://drive.google.com/file/d/1Xv61JaNx1Q15GCbMKqnskjKqLnKB2D1f/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/9088995718"},{"id":109,"name":"Bộ khoan vặn vít Bosch X-Line 34 món","drive":"https://drive.google.com/file/d/1swIsefO6LWAvllt1HCs0IplCdkGsbtL9/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1446762406"},{"id":110,"name":"Bộ khoan vặn vít Bosch X-Line 34 món","drive":"https://drive.google.com/file/d/1J8YrC8eDR1TX9T3c-RY4OK5Aj1JBg50Q/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1446762406"},{"id":111,"name":"Dĩa vuông lá sứ Minh Long Trắng Ngà","drive":"https://drive.google.com/file/d/10MLrOaCRKxmpCi_S_I2D-wl8qi0eNgyu/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/23985466554"},{"id":112,"name":"Dĩa vuông lá sứ Minh Long Trắng Ngà","drive":"https://drive.google.com/file/d/15VHIs_A3OYLoE6YaTSzTdJC9tfQKl-zC/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/23985466554"},{"id":113,"name":"Dĩa vuông lá sứ Minh Long Trắng Ngà","drive":"https://drive.google.com/file/d/1l0UnGb9nEsVHJ-XrS0LInr32kNZOGi2E/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/23985466554"},{"id":114,"name":"Lõi lọc thay thế Brita On Tap","drive":"https://drive.google.com/file/d/1Dh1IL5vEecWw3temLWf_EtX_XQPHPIPx/view?usp=drivesdk","shopee":"https://shopee.vn/product/93765933/6546205074"},{"id":115,"name":"Lõi lọc thay thế Brita On Tap","drive":"https://drive.google.com/file/d/1Ja0T5s2163CJAnsLSi4VH_48o7jsjr-O/view?usp=drivesdk","shopee":"https://shopee.vn/product/93765933/6546205074"},{"id":116,"name":"Bộ 10 móc chữ S Hobby MTS-10","drive":"https://drive.google.com/file/d/1NnesoLfljyUJsDHTgZLZ79cqP-rtivA8/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/23247665939"},{"id":117,"name":"Bộ 10 móc chữ S Hobby MTS-10","drive":"https://drive.google.com/file/d/1ewuh8t-QANQ8gna7ajOzocModAiqIumh/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/23247665939"},{"id":118,"name":"Bộ 10 móc chữ S Hobby MTS-10","drive":"https://drive.google.com/file/d/1YFZXws9GrV_Ye6Ep68iTTo-tEN8Ws2lB/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/23247665939"},{"id":119,"name":"Bộ 10 móc chữ S Hobby MTS-10","drive":"https://drive.google.com/file/d/1s0S1mN78hhV_EqMUhsZ6vEGXy20_av6v/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/23247665939"},{"id":120,"name":"Đèn bàn học Philips RobotPlus DSK601 13W","drive":"https://drive.google.com/file/d/1YtLYnfDl7isnrtugSEWQNpQ4LhOcQvRT/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/17209392311"},{"id":121,"name":"Đèn bàn học Philips RobotPlus DSK601 13W","drive":"https://drive.google.com/file/d/1YC5oiGcpu5qSl0z_xCNgryColmmR2k9w/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/17209392311"},{"id":122,"name":"Máy khoan động lực Bosch GSB 600","drive":"https://drive.google.com/file/d/1DmqGDYP-sn-ZHO5e2LCRLI9X5QaVroaj/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24034352329"},{"id":123,"name":"Máy khoan động lực Bosch GSB 600","drive":"https://drive.google.com/file/d/1v-Y-WObzNl6X5z3sTNNYdW9VdmZv-p_C/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24034352329"},{"id":124,"name":"Quạt sạc tích điện Comet CRF1506 7W","drive":"https://drive.google.com/file/d/1l562LNMU1T1qyL0CleEJw_35aX2-UmPX/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/17340730195"},{"id":125,"name":"Kệ treo giấy vệ sinh Hobby G8","drive":"https://drive.google.com/file/d/1rLihZjL7H6clYeWlYvNL2-vRS9yMrnwd/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2360072490"},{"id":126,"name":"Kệ treo giấy vệ sinh Hobby G8","drive":"https://drive.google.com/file/d/1YVKE3CYQTg0Hr5DuplmOpGVipdc1dg84/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2360072490"},{"id":127,"name":"Tô dĩa sứ Minh Long Cá Cơm","drive":"https://drive.google.com/file/d/1PPgre2_uYbjpujfvOCKbI8roO186oadZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/26417595097"},{"id":128,"name":"Tô dĩa sứ Minh Long Cá Cơm","drive":"https://drive.google.com/file/d/1H-njnAmV7p9re6lteIwkf72GDEW8cbFG/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/26417595097"},{"id":129,"name":"Tô dĩa sứ Minh Long Cá Cơm","drive":"https://drive.google.com/file/d/1novrnQR7MZtfdL6vIeQTU8Uid1WUPEOP/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/26417595097"},{"id":130,"name":"Tô dĩa sứ Minh Long Jasmine Tứ Quý","drive":"https://drive.google.com/file/d/1Ng7oBt0Ewza4NCWzRDaIwimcHUV9BlD-/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/24932407893"},{"id":131,"name":"Tô dĩa sứ Minh Long Jasmine Tứ Quý","drive":"https://drive.google.com/file/d/1TzX8tf1NIxoblLuUctnos55pa4r368fo/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/24932407893"},{"id":132,"name":"Tô dĩa sứ Minh Long Jasmine Tứ Quý","drive":"https://drive.google.com/file/d/1Mb5X0E5bs_8ysJR_gJERUZNxr2jIvI5r/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/24932407893"},{"id":133,"name":"Tô dĩa sứ Minh Long Camellia Xanh Dương","drive":"https://drive.google.com/file/d/13WUL1hyZ8crWP4p8344o8u7HKcXhIG_X/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/26957774235"},{"id":134,"name":"Tô dĩa sứ Minh Long Camellia Xanh Dương","drive":"https://drive.google.com/file/d/1JxChqtFQntr77ZG_fE5LM9r0knvnbLzP/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/26957774235"},{"id":135,"name":"Tô dĩa sứ Minh Long Camellia Xanh Dương","drive":"https://drive.google.com/file/d/1jpYjjziE8xrAX6_USs7KZ9OEaLOa40z3/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/26957774235"},{"id":136,"name":"Ổ cắm công suất lớn AC 4000W","drive":"https://drive.google.com/file/d/1Ey0FcfvBE6HWu50D1hqVyP0esvDZxIK_/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/24727751826"},{"id":137,"name":"Kệ gia vị Inox 304 dán tường Hobby","drive":"https://drive.google.com/file/d/1S_wyQRgsVsbVOUwLUQrJ63fh0L82mE9r/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2691787160"},{"id":138,"name":"Dầu dưỡng lông chó mèo Julyhouse 50ml","drive":"https://drive.google.com/file/d/1tBArmAeyJQFXReyf27kn810eTDseqAAj/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/43867451239"},{"id":139,"name":"Dầu dưỡng lông chó mèo Julyhouse 50ml","drive":"https://drive.google.com/file/d/191gP5Q6S7iEYZVVG_JZ9FKPY4kjOlGgu/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/43867451239"},{"id":140,"name":"Tua vít cách điện Bosch VDE PH1/PH2","drive":"https://drive.google.com/file/d/1lcSZtcxPh2tcS6dOoS3eijvHbdzqPp71/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/44207233877"},{"id":141,"name":"Bộ chổi than phụ tùng máy Bosch","drive":"https://drive.google.com/file/d/1oNvMHSTOkb7sByV30OIOqnqCntqHxHuJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24820728684"},{"id":142,"name":"Bộ chổi than phụ tùng máy Bosch","drive":"https://drive.google.com/file/d/1XZSPZIV--BwaeiJfnq2d3wWZQXIC8pPO/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24820728684"},{"id":143,"name":"Chổi cọ xoong nồi MyJae kèm miếng cọ","drive":"https://drive.google.com/file/d/1SmB5155OmyASdTCod6QbX2U6wrDO3rhu/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/40627039877"},{"id":144,"name":"Combo bình lọc nước Brita Flow 8.2L","drive":"https://drive.google.com/file/d/1Q31N6mJkQqwTzTDQW2tcRhuIpgZZsAnl/view?usp=drivesdk","shopee":"https://shopee.vn/product/93765933/14123472074"},{"id":145,"name":"Thanh treo quần áo 6 chấu Hobby 6TV160","drive":"https://drive.google.com/file/d/1dPFt2PGXYMcFI2NGydh9xJFiGwJF8cpk/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2035116154"},{"id":146,"name":"Thanh treo quần áo 6 chấu Hobby 6TV160","drive":"https://drive.google.com/file/d/1bmtdWbcKOYCDafxyEbZr382rF_0ZHjLG/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2035116154"},{"id":147,"name":"Chặn cửa nam châm đế dẹp Hobby CC2","drive":"https://drive.google.com/file/d/18FmHRavQbDOYHt0UUPeY2jpAFCbAAVwq/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2223148654"},{"id":148,"name":"Chặn cửa nam châm đế dẹp Hobby CC2","drive":"https://drive.google.com/file/d/18wj3rBpwrGJcnHt5aTtXwfZxwAidoywr/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2223148654"},{"id":149,"name":"Hũ thủy tinh nắp Inox 304 Hobby TTI","drive":"https://drive.google.com/file/d/1qe5kjjZpKfr8nYcl7ZRwnSGetFck4r0k/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/19865857148"},{"id":150,"name":"Hũ thủy tinh nắp Inox 304 Hobby TTI","drive":"https://drive.google.com/file/d/1X_TtMjXFbdoSOC5YGhAk0jie_yNRRFKo/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/19865857148"},{"id":151,"name":"Chặn cửa nam châm gắn sàn Hobby CC5","drive":"https://drive.google.com/file/d/1_IMu0I3r_biwfMcr8OgGXb5aR1of2Dhz/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/9403939619"},{"id":152,"name":"Chặn cửa nam châm gắn sàn Hobby CC5","drive":"https://drive.google.com/file/d/1hMK7AXM1aWasLnLo7qKbwAYmDnQQcud1/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/9403939619"},{"id":153,"name":"Chặn cửa nam châm gắn sàn Hobby CC5","drive":"https://drive.google.com/file/d/1ZTrYbTFRLVeKLhmQ31Vq45SsHO75u6tY/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/9403939619"},{"id":154,"name":"Bộ trà sứ Minh Long Camellia Trắng 1.1L","drive":"https://drive.google.com/file/d/1PZlfAlEhd7hV2FUm8sqdlNp_p5hxHs2R/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/40665684162"},{"id":155,"name":"Muỗng Minh Long Jasmine Hoa May Mắn","drive":"https://drive.google.com/file/d/1idvY7-UsysRd3MuyhWQLcxxDhfORxdem/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/56852798894"},{"id":156,"name":"Kệ góc nhà tắm Inox 304 Hobby KG2","drive":"https://drive.google.com/file/d/1gTen1Ia4qQmoX9Qm-6dbVk4m0fZYuLQf/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/6044655555"},{"id":157,"name":"Kệ góc nhà tắm Inox 304 Hobby KG2","drive":"https://drive.google.com/file/d/1KQ0mO_NMCRdoawu38prnvdRJT80dgSRO/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/6044655555"},{"id":158,"name":"Đèn ốp trần Philips tròn DN027C","drive":"https://drive.google.com/file/d/1V5r9ZjDTsMILnDWeO5TUSXthiOb9SW9r/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/22139938671"},{"id":159,"name":"Đèn ốp trần Philips tròn DN027C","drive":"https://drive.google.com/file/d/1JnxJI8pvwUjfe_M3RyE2qOsfODR3mDeb/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/22139938671"},{"id":160,"name":"Đèn ốp trần Philips tròn DN027C","drive":"https://drive.google.com/file/d/14eD-IpGPs94HCNHZHnn85HkkaNmFAykB/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/22139938671"},{"id":161,"name":"Máy phun xịt rửa Bosch Universal Aquatak 125","drive":"https://drive.google.com/file/d/1Ey2DK-2rGCReMHIaIMOy3OVCvCCuUwpY/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1285081455"},{"id":162,"name":"Máy phun xịt rửa Bosch Universal Aquatak 125","drive":"https://drive.google.com/file/d/1xzAzLWnQJXDD66F7ymucO0a8R6NKpBzC/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1285081455"},{"id":163,"name":"Máy phun xịt rửa Bosch Universal Aquatak 125","drive":"https://drive.google.com/file/d/10cGgwh9jGaRoe1uwaJrRpjxsXGRvK_dF/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1285081455"},{"id":164,"name":"Máy bắn keo Bosch PKP 18E","drive":"https://drive.google.com/file/d/1SDYK0orIIRo5YLW2mtZz1dxj93J2q0Yx/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24265941502"},{"id":165,"name":"Máy bắn keo Bosch PKP 18E","drive":"https://drive.google.com/file/d/1gyq5BuNePEhmVacRDqCnCHTw_Wsj7xAX/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24265941502"},{"id":166,"name":"Ổ cắm công suất cao AC 2500W 3m","drive":"https://drive.google.com/file/d/1bbPyzuTHDnDq7OrHJh9_jCqM82AB6Jd_/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/25122359475"},{"id":167,"name":"Ổ cắm công suất cao AC 2500W 3m","drive":"https://drive.google.com/file/d/1KhTgH8wv0a5iHkuLPWj83WPRDN1bWfHh/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/25122359475"},{"id":168,"name":"Bình xịt dầu ăn thủy tinh Hobby BD200","drive":"https://drive.google.com/file/d/1ism8aE9C2rsg3Ouvdt_kx1PxbEqYMFtm/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/11598464150"},{"id":169,"name":"Tinh dầu thiên nhiên Julyhouse nguyên chất","drive":"https://drive.google.com/file/d/1naule1boEWnIJMfBF-vxw8RVUW3fm_hq/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/1625806999"},{"id":170,"name":"Tinh dầu thiên nhiên Julyhouse nguyên chất","drive":"https://drive.google.com/file/d/1ZRa2LaXiKmefXCuG1cTTNHvbl3nOnwAJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/1625806999"},{"id":171,"name":"Tinh dầu thiên nhiên Julyhouse nguyên chất","drive":"https://drive.google.com/file/d/1T38zal08uGl7AzRFUFqglSnqYxKiJcRR/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/1625806999"},{"id":172,"name":"Máy khoan động lực pin Bosch GSB 185-LI","drive":"https://drive.google.com/file/d/1VZA7-pkX3ZdjqS9Wi8BdOAjfPnprbC2Y/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/21532198581"},{"id":173,"name":"Máy khoan động lực pin Bosch GSB 185-LI","drive":"https://drive.google.com/file/d/1rRwTygbOb9alqh9dfLKiUWxJ2RX1SWGI/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/21532198581"},{"id":174,"name":"Bút thử điện đầu dẹt Bosch SL3","drive":"https://drive.google.com/file/d/1e2--qQN96CMSbIJJ7qOid1GJttRlgGKg/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/43957246323"},{"id":175,"name":"Bút thử điện đầu dẹt Bosch SL3","drive":"https://drive.google.com/file/d/1iY8YaCvWumPffxvRrM1rhuQP69EZF_pY/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/43957246323"},{"id":176,"name":"Nồi sứ dưỡng sinh Minh Long Luna 3.0L","drive":"https://drive.google.com/file/d/1R9AhrkUHpM34Qvy01Df9rshVjxYmX4mA/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/4035792387"},{"id":177,"name":"Nồi sứ dưỡng sinh Minh Long Luna 3.0L","drive":"https://drive.google.com/file/d/1w2zh6-0eB11Vp88BbLyrD_uLxp3VyLeZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/4035792387"},{"id":178,"name":"Tô sứ Minh Long Sen Trắng Ngà 20cm","drive":"https://drive.google.com/file/d/1jQ2ErpfSGKcfgiD4qRL__YaG0Oc4hpTM/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/27271196069"},{"id":179,"name":"Chốt giữ cửa nam châm dán Hobby CC7","drive":"https://drive.google.com/file/d/1Y2Ac1_Mwgm2SH6UzhINfbrZhdqHRvUBy/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/23565997465"},{"id":180,"name":"Bộ mũi khoan tường Bosch Concrete","drive":"https://drive.google.com/file/d/1Ydr3ZIyq_Hm3NK0Kpfq8dagZQcBbbqV9/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1465599577"},{"id":181,"name":"Bộ mũi khoan tường Bosch Concrete","drive":"https://drive.google.com/file/d/1WGVoAfTqUlNplQCPKza2-txBlUqRiybL/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1465599577"},{"id":182,"name":"Ống nước nối dài Bosch 6m","drive":"https://drive.google.com/file/d/1-IQ7Mfe-LcT_vUxOf4JfUvkcntIkX0Q6/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24165949382"},{"id":183,"name":"Ống nước nối dài Bosch 6m","drive":"https://drive.google.com/file/d/1V8tQHbAOqu97IkMjGQ3QqC_oCHNgy2Gb/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24165949382"},{"id":184,"name":"Máy mài góc Bosch GWS 700 710W","drive":"https://drive.google.com/file/d/1UP8n7Ts9g0AH2YmNilwXW2Tt5Cm6nxxY/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24464573819"},{"id":185,"name":"Máy mài góc Bosch GWS 700 710W","drive":"https://drive.google.com/file/d/1nIQ0UldVCmNURHEweyEs-KOvb21ABlwS/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24464573819"},{"id":186,"name":"Máy khoan Bosch GBM 400 (Solo)","drive":"https://drive.google.com/file/d/1Gv2Z52LgS6VDVrGEgpw2Hq0TNLckAwgB/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/23263916940"},{"id":187,"name":"Ổ cắm điện chống cháy Comet 5m","drive":"https://drive.google.com/file/d/1ieQYpW6d33Rt0XKu2wliev9MZvWz_Qzf/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/5159525023"},{"id":188,"name":"Ổ cắm điện chống cháy Comet 5m","drive":"https://drive.google.com/file/d/14GPpaX9d76HcQRo16feKRsBoiJ47Q7H1/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/5159525023"},{"id":189,"name":"Vòi rửa chén nóng lạnh Hobby CRC1","drive":"https://drive.google.com/file/d/1mQtIa-R67cL_id02aTspFJZDa_6pSCKc/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/8624741399"},{"id":190,"name":"Vòi rửa chén nóng lạnh Hobby CRC1","drive":"https://drive.google.com/file/d/1GMRM2YnGy-mqIYfa64hI5eft13saUNsg/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/8624741399"},{"id":191,"name":"Tô chén dĩa sứ Minh Long Loa Kèn","drive":"https://drive.google.com/file/d/1d6TIpJ6ksg52UewjCYHxWWoYzukuGRq5/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/13694548416"},{"id":192,"name":"Tô chén dĩa sứ Minh Long Loa Kèn","drive":"https://drive.google.com/file/d/1bgE8r2kvaxKdgteWy6wgLVnOsMRREqmj/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/13694548416"},{"id":193,"name":"Tô chén dĩa sứ Minh Long Loa Kèn","drive":"https://drive.google.com/file/d/1lYyB7E95VCtJEgcMozhaOEFuEDc1yAKW/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/13694548416"},{"id":194,"name":"Cây lau nhà MyJae tự vắt kháng khuẩn","drive":"https://drive.google.com/file/d/1ryTMS7bgTGSuceQsF3DSuZ_aiBW2AwMR/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/19029190356"},{"id":195,"name":"Vòi rửa chén lạnh Hobby RL3 dây cấp","drive":"https://drive.google.com/file/d/16pB_inHG8gaUjQM-CmaZbtaleapSqT1I/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/26557943828"},{"id":196,"name":"Vòi rửa chén lạnh Hobby RL3 dây cấp","drive":"https://drive.google.com/file/d/1ndhiSx17G5GZx4u4FC4FSVmiOu6rC8w7/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/26557943828"},{"id":197,"name":"Đồ chặn cửa đệm cao su Hobby CC10","drive":"https://drive.google.com/file/d/1vbqamlabxDJ-klA4JfX_QTJHU4g2dt41/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/18590985728"},{"id":198,"name":"Vòi lavabo lạnh Inox 304 Hobby LBL2","drive":"https://drive.google.com/file/d/1UUE9dZICWd2bNqDmLZKkOHknscJE-82H/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/21210407043"},{"id":199,"name":"Đèn bàn học Philips Gesture DSK701 11W","drive":"https://drive.google.com/file/d/1w4k493ggtUHw7O1xGkqr3j_w2wZ85D-R/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/41521795544"},{"id":200,"name":"Nước tẩy bồn cầu Julyhouse 480ml","drive":"https://drive.google.com/file/d/1aF-q-ehH5QnI-eyKpoVkXL1i-7y6Kh6p/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/24707617664"},{"id":201,"name":"Nước tẩy bồn cầu Julyhouse 480ml","drive":"https://drive.google.com/file/d/12Baq9WpjHsYGUNvq-CYpjVG0A-sqlxyg/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/24707617664"},{"id":202,"name":"Động cơ DC phụ tùng máy Bosch","drive":"https://drive.google.com/file/d/1kV-_ZD-QZOqWQtuLlzY4eTf4txjgwc3Y/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/25420736444"},{"id":203,"name":"Động cơ DC phụ tùng máy Bosch","drive":"https://drive.google.com/file/d/1chK3S_rreB4KF-RT-6fYcjCLYD2q40Lu/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/25420736444"},{"id":204,"name":"Quạt cầm tay tích điện Comet CRF0904","drive":"https://drive.google.com/file/d/1gXfNDjySK7OghH8VpQq8yhytCKgoQcKa/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/2250424059"},{"id":205,"name":"Quạt cầm tay tích điện Comet CRF0904","drive":"https://drive.google.com/file/d/1s7sEB8lpJSQndpNNiN-2rvoRiSfZAQMy/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/2250424059"},{"id":206,"name":"Chảo đúc đáy từ Green Cook Sapphire GCP09","drive":"https://drive.google.com/file/d/1vpOMIaFKtPK7perIpWSxuOHMWgv9eIk5/view?usp=drivesdk","shopee":"https://shopee.vn/product/73224788/21111606473"},{"id":207,"name":"Chảo đúc đáy từ Green Cook Sapphire GCP09","drive":"https://drive.google.com/file/d/1pkrNuz7LHo04nAoT14f2gZwXnPDmwu9A/view?usp=drivesdk","shopee":"https://shopee.vn/product/73224788/21111606473"},{"id":208,"name":"Móc treo quần áo 2 chấu Hobby MT2CH","drive":"https://drive.google.com/file/d/1JVjRlNLKKbmLIHbltgFjN88TQtFzmhG_/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/15185270680"},{"id":209,"name":"Móc treo quần áo 2 chấu Hobby MT2CH","drive":"https://drive.google.com/file/d/1IKJ0yBmin5BcLSz22DWnnUShvGsCfdZD/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/15185270680"},{"id":210,"name":"Giá treo giấy vệ sinh khoan tường Hobby G7","drive":"https://drive.google.com/file/d/14tmFKR9gXUgzSVQKRp-RdSo2SGTtA4XP/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2198868696"},{"id":211,"name":"Giá treo giấy vệ sinh khoan tường Hobby G7","drive":"https://drive.google.com/file/d/1HAYK8ANfBz9_ECNOYUYwWP6d5XSKKwul/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2198868696"},{"id":212,"name":"Thanh treo quần áo Inox 304 Hobby GT60","drive":"https://drive.google.com/file/d/1xe4O_MNzB-INytOypnJMrsN2Tyno4bWz/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/4605211500"},{"id":213,"name":"Thanh treo quần áo Inox 304 Hobby GT60","drive":"https://drive.google.com/file/d/1OWh2lnc_QyDoOw0havY_3rd9xna-3r2J/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/4605211500"},{"id":214,"name":"Đèn ốp trần Philips tròn CL254 trắng","drive":"https://drive.google.com/file/d/1dBJ4Xx2Qyq8UkNPFFZKNWdPzpBbMiMJo/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/10808138096"},{"id":215,"name":"Combo xịt thơm quần áo Julyhouse tinh dầu","drive":"https://drive.google.com/file/d/1IT4YJGhfsebM4fLUjU-6PwuwYvBl8Nzy/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/23833020377"},{"id":216,"name":"Combo xịt thơm quần áo Julyhouse tinh dầu","drive":"https://drive.google.com/file/d/1TfaIwFit3smzREEUIxZSlqh-nE8amVx0/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/23833020377"},{"id":217,"name":"Dĩa sứ Minh Long Đài Các Bạch Kim","drive":"https://drive.google.com/file/d/1y28n1CCmuzV2sn9Hc5-USSJVAiy14L2W/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/26359427508"},{"id":218,"name":"Quạt sạc tích điện Comet CRF1406 6W","drive":"https://drive.google.com/file/d/1h_vlwJR0iLkhbayb25-RGuH-fIbfxSDE/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/11368256629"},{"id":219,"name":"Đèn bàn học sinh Comet CT413 kèm bóng","drive":"https://drive.google.com/file/d/1swGdk2MkcQ6weBoFiKQOXVC1-lt5qMps/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/2313745444"},{"id":220,"name":"Đèn bàn học sinh Comet CT413 kèm bóng","drive":"https://drive.google.com/file/d/1oxFYtwd6skFqOZ3rclXEUN9E-BBI3X6N/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/2313745444"},{"id":221,"name":"Nồi đúc men gốm Green Cook GCS233","drive":"https://drive.google.com/file/d/1SXp8_LvxidmlmZCguG6FjqIxGzK9Ky2i/view?usp=drivesdk","shopee":"https://shopee.vn/product/73224788/26666120234"},{"id":222,"name":"Đá cắt kim cương Bosch Turbo","drive":"https://drive.google.com/file/d/14qYdBChcMq0_iiGb-5URh7ekpdNnMC0c/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/12151618187"},{"id":223,"name":"Đá cắt kim cương Bosch Turbo","drive":"https://drive.google.com/file/d/1sWn_hsbMLmpymg4ad_Sp0K_UZ2hQT-KZ/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/12151618187"},{"id":224,"name":"Bộ tua vít đa năng Bosch 46 món","drive":"https://drive.google.com/file/d/1Pt_BHV6tSu4xFqP43RL60ASTTuSQ1m-W/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1446762402"},{"id":225,"name":"Bộ tua vít đa năng Bosch 46 món","drive":"https://drive.google.com/file/d/1RjMsRf8-RvPDj5on2c6yKMIPp3UHu6Gh/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1446762402"},{"id":226,"name":"Tô dĩa sứ Minh Long Camellia Diệp Lục","drive":"https://drive.google.com/file/d/1s34i2GNmAff644N99hLoeN7ipRej6yI8/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/25832219237"},{"id":227,"name":"Chảo đúc cạn Green Cook GCP233 men gốm","drive":"https://drive.google.com/file/d/1wLMDGWsLzLYlemaOUQg9-Ng_8dauyuTo/view?usp=drivesdk","shopee":"https://shopee.vn/product/73224788/21296491081"},{"id":228,"name":"Chảo đúc cạn Green Cook GCP233 men gốm","drive":"https://drive.google.com/file/d/1vQtR784az927qFuAnWS_7PRlTXUwIVAU/view?usp=drivesdk","shopee":"https://shopee.vn/product/73224788/21296491081"},{"id":229,"name":"Xịt phòng Julyhouse 280ml tinh dầu thiên nhiên","drive":"https://drive.google.com/file/d/138Q0IW2w-n3EwkkEwB3g1avPN_r3iXPw/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/24088513692"},{"id":230,"name":"Đầu khoan có khóa Bosch 10-13mm","drive":"https://drive.google.com/file/d/1_ao8J_Esv8Y1nh-cig3P550CrHM9DOM-/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24819231584"},{"id":231,"name":"Máy chà nhám rung Bosch GSS 140","drive":"https://drive.google.com/file/d/1galw1TK-bBJ25B8RAuK2O7y4sFaCi_gB/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24364575001"},{"id":232,"name":"Thước cuộn Bosch 5m/8m chuẩn Đức","drive":"https://drive.google.com/file/d/1J5oeCoTF96zH7dZgg_4ctkwEWYOZEscw/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/42707193732"},{"id":233,"name":"Ổ cắm điện nối dài Comet 2500W 2m","drive":"https://drive.google.com/file/d/1a_8Y6Hjt1OBQ8hjz7xj1LR2WUdK4bjPo/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/6959523199"},{"id":234,"name":"Vòi lavabo lạnh Inox 304 Hobby LBL6","drive":"https://drive.google.com/file/d/1LB2rFU3LoVYTC0OdTJY6ENFal23G7BxB/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/24807404126"},{"id":235,"name":"Bóng đèn LED Philips điều chỉnh độ sáng","drive":"https://drive.google.com/file/d/1e3GFxNXTTzli5kf4MGIWP1fOaCnzh3Vf/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/21595271299"},{"id":236,"name":"Bình xịt phòng tinh dầu bạc hà Julyhouse","drive":"https://drive.google.com/file/d/1dxWnQEDjaTLJVNJOqPbDRQmX8ey4_DX6/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/2226995788"},{"id":237,"name":"Body Mist cho thú cưng Julyhouse 100ml","drive":"https://drive.google.com/file/d/1O7RioDjI_4_YVnyG4q2bAP_xNgW4h1xw/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/14285361829"},{"id":238,"name":"Bộ vặn vít Bosch 26 món","drive":"https://drive.google.com/file/d/1M20iWeaOdUIFuedN_cNNZRwBdzoIVb-b/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1452986331"},{"id":239,"name":"Bộ vặn vít Bosch 26 món","drive":"https://drive.google.com/file/d/1BVEFgn4NHXIhv8AwxTOw1EWjQKzatxYh/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1452986331"},{"id":240,"name":"Dĩa sứ Minh Long Jasmine Phước Lộc Thọ","drive":"https://drive.google.com/file/d/1PjU6t3_pIGfYZun6DZeebC267KqVU7Zd/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/17899231440"},{"id":241,"name":"Dĩa sứ Minh Long Jasmine Phước Lộc Thọ","drive":"https://drive.google.com/file/d/1OJJXm_B-VxDyI76bH5Fqhq9Uc466N59W/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/17899231440"},{"id":242,"name":"Ly sứ dưỡng sinh 0.48L Trắng K3","drive":"https://drive.google.com/file/d/1x-jCPzZG5xOUJWsS7p2uMaqSgVArB9ei/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/43015687598"},{"id":243,"name":"Ly sứ dưỡng sinh 0.48L Trắng K3","drive":"https://drive.google.com/file/d/1N0sWgI8zJP7TLA9EpwGkIyQhNv4N7fS3/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/43015687598"},{"id":244,"name":"Cây rửa ly MyJae đầu chổi mềm mại","drive":"https://drive.google.com/file/d/1y_f2i5gwq2b8RWKc-1bJlb1TuBlrUOmO/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/45702888986"},{"id":245,"name":"Cây rửa ly MyJae đầu chổi mềm mại","drive":"https://drive.google.com/file/d/1qjGnsR0JVZU1Yju46MAcvZrHu6l8mdw9/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/45702888986"},{"id":246,"name":"Cây rửa ly MyJae đầu chổi mềm mại","drive":"https://drive.google.com/file/d/1D26olhlbWAyQEwn7hmpj3IS15DJLzIQP/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/45702888986"},{"id":247,"name":"Bình lọc nước Brita Liquelli 2.2L","drive":"https://drive.google.com/file/d/1c-td4HiacEXhQeT1ayvYHfmyAhTdNgLo/view?usp=drivesdk","shopee":"https://shopee.vn/product/93765933/26963681037"},{"id":248,"name":"Đèn sạc LED tích điện Comet CRL3403S 9W","drive":"https://drive.google.com/file/d/1jokrXri_4exk8lYps2tVduRb1qGjv9dK/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/44425267247"},{"id":249,"name":"Muỗng sứ Minh Long Tulip Awakening","drive":"https://drive.google.com/file/d/17eLlgoGBPKEQaJhsKRhoDvSdlKNSmOCV/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/51850575705"},{"id":250,"name":"Muỗng sứ Minh Long Tulip Awakening","drive":"https://drive.google.com/file/d/1KY92qOlmQz5E4tkkdAEL38oJ70vPtbGr/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/51850575705"},{"id":251,"name":"Lọ xay tiêu Hobby nắp Inox 304","drive":"https://drive.google.com/file/d/175_R0tWl8JbxTOX-w8Uql3KzbFzteXdK/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/1602413299"},{"id":252,"name":"Lọ xay tiêu Hobby nắp Inox 304","drive":"https://drive.google.com/file/d/16CjXehyz8jWI1OXYQ1GglQJvondxobsm/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/1602413299"},{"id":253,"name":"Chén cơm sứ Minh Long Camellia Diệp Lục","drive":"https://drive.google.com/file/d/1jGghc6Q5PlSDJEQr2gABqrBnNx73IQ9V/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/18662510857"},{"id":254,"name":"Chén cơm sứ Minh Long Camellia Diệp Lục","drive":"https://drive.google.com/file/d/1I4n1PK2xZt_9y0Dy0V49MKLRhLCslxjt/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/18662510857"},{"id":255,"name":"Bông lau cây lau nhà MyJae 360 độ","drive":"https://drive.google.com/file/d/11mMi_1WPF4lQg_TXP9OUz9-2gqHo8d3N/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/40753517348"},{"id":256,"name":"Quạt sạc cầm tay Comet Tai Mèo CRF1104","drive":"https://drive.google.com/file/d/1BLuoXLyFWwd-VE5t4h2vx761QTSNdvAm/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/25670212826"},{"id":257,"name":"Tô dĩa sứ Minh Long Jasmine Chỉ Vàng","drive":"https://drive.google.com/file/d/1dExQSMOyIThIrC5xmlF4wfwhhyQDCheD/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/17597545594"},{"id":258,"name":"Đèn LED âm trần Philips DL260 chóa sâu","drive":"https://drive.google.com/file/d/11m_nphZdaIMMlVybDedgdUqrGs739UV3/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/40509961872"},{"id":259,"name":"Combo 2 miếng rửa chén sợi tre MyJae","drive":"https://drive.google.com/file/d/1J1QFXqMHeUxsikgVksY1EqbP3M-r0XPa/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/29211546147"},{"id":260,"name":"Combo 2 miếng rửa chén sợi tre MyJae","drive":"https://drive.google.com/file/d/1a_Yi89ndTvsYj13w1PmGspytUhqLWMa3/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/29211546147"},{"id":261,"name":"Bộ 4 bóng LED âm trần Philips Eridani","drive":"https://drive.google.com/file/d/17HcYeELl61HqBhhAB2JU95n1VrY40cT3/view?usp=drivesdk","shopee":"https://shopee.vn/product/292786634/29365840609"},{"id":262,"name":"Bọt biển rửa chén kháng khuẩn MyJae 3 cái","drive":"https://drive.google.com/file/d/1HPtMgn35WfXC2uPKbnmPrPw27_c7BBgb/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/23218654597"},{"id":263,"name":"Bộ chặn cửa nam châm dán Hobby CC1","drive":"https://drive.google.com/file/d/15Iy_yNyFXOIVtxAC5zyZYyrYqfTdYKjn/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2006132562"},{"id":264,"name":"Miếng dán Inox 304 kèm keo Hobby Pass","drive":"https://drive.google.com/file/d/1aOBoBXKEnVSXmWkk5qEy5-rAFjbJSHVb/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/4870922119"},{"id":265,"name":"Miếng dán Inox 304 kèm keo Hobby Pass","drive":"https://drive.google.com/file/d/1BLCQ2GURHhHfPxViMa1TmBM3NxjCuqSP/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/4870922119"},{"id":266,"name":"Xịt khử mùi ô tô Julyhouse 150ml","drive":"https://drive.google.com/file/d/1bArxjlySPgumnBqXFGVzSbZlHtqew-hB/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/28691162215"},{"id":267,"name":"Xịt khử mùi ô tô Julyhouse 150ml","drive":"https://drive.google.com/file/d/1Um_tS3ZIB2h36aB_FRvbfIoargbyV2F7/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/28691162215"},{"id":268,"name":"Cây chà bồn cầu MyJae 2 đầu","drive":"https://drive.google.com/file/d/1HhzHeCM71rbCWeKTCuZoEARUz8gOnUv4/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/21835286420"},{"id":269,"name":"Găng tay TPE kháng khuẩn MyJae 40 cái","drive":"https://drive.google.com/file/d/1C3gT2QO0VcHuhd4j88BmZRLjCEZ4P5j0/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/19935324866"},{"id":270,"name":"Chốt chặn cửa 2 chiều Hobby CCD2","drive":"https://drive.google.com/file/d/1WyABubfyMv1iWwWO7CLTL_jmd8MQIUlo/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/16199200236"},{"id":271,"name":"Chốt chặn cửa 2 chiều Hobby CCD2","drive":"https://drive.google.com/file/d/171sxJqFvEUsWKrFawtObKmseQdUb7eEH/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/16199200236"},{"id":272,"name":"Dây sen tắm 3 lớp Hobby DS","drive":"https://drive.google.com/file/d/1LjeWT9x3tHpubwXgQWS24tJo0f2pZ5ju/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/8606095959"},{"id":273,"name":"Dây sen tắm 3 lớp Hobby DS","drive":"https://drive.google.com/file/d/1aK9UWaGZ2CspSV_VDuIHdUOuKAxANKiN/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/8606095959"},{"id":274,"name":"Giá treo vòi sen 2 nấc Hobby GVSK2","drive":"https://drive.google.com/file/d/16OAsHkPBM-_4ZrhWftqj-5ok_46MyM6C/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/25571483497"},{"id":275,"name":"Giá treo vòi sen 2 nấc Hobby GVSK2","drive":"https://drive.google.com/file/d/1WNWiSd1hek3oojZKbWCK76C1jdnzjBvy/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/25571483497"},{"id":276,"name":"Khay đựng đũa muỗng Hobby KM","drive":"https://drive.google.com/file/d/1yUocRznhS4ctGfOumA6mBk0UgqM0bDOt/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/23133851630"},{"id":277,"name":"Combo 4 bodymist chó mèo Julyhouse 20ml","drive":"https://drive.google.com/file/d/1MUUK2ic0H2vD1cHJBZMGbM7ZR4y7HvZC/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/41677453402"},{"id":278,"name":"Ổ cắm đa năng Comet 2500W dây dài","drive":"https://drive.google.com/file/d/13SPga5uylmmQ-xqS6kxSLyFm-U8pQ-3L/view?usp=drivesdk","shopee":"https://shopee.vn/product/96935053/28615036082"},{"id":279,"name":"Bình lọc nước Brita Flow 8.2L","drive":"https://drive.google.com/file/d/1r_qmqB1SNtq-kp4_PDjwxACtq-TmQOHJ/view?usp=drivesdk","shopee":"https://shopee.vn/product/93765933/1580225644"},{"id":280,"name":"Bông lau thay thế MyJae sợi Microfiber","drive":"https://drive.google.com/file/d/1hQ8Oy3-tTLRMhz7M2BRuxthD_XTa7nEV/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/3561867115"},{"id":281,"name":"Bông lau thay thế MyJae sợi Microfiber","drive":"https://drive.google.com/file/d/14qNT-GifYsbN7Hh79FH3tVtk6gwxEcVf/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/3561867115"},{"id":282,"name":"Bông lau thay thế MyJae sợi Fiber","drive":"https://drive.google.com/file/d/1Ig4ea3dvFw9NsXZpsp4v8LG4mI7rLN--/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/14634777064"},{"id":283,"name":"Bông lau thay thế MyJae sợi Fiber","drive":"https://drive.google.com/file/d/11SeCecGixwmsexGJnRPI0I6xpX6uZ-CM/view?usp=drivesdk","shopee":"https://shopee.vn/product/243189925/14634777064"},{"id":284,"name":"Kẹp bát đĩa chống nóng Hobby KI4","drive":"https://drive.google.com/file/d/1RRi2M1m9HfTfW4JX7yMyB3EtJayiwA9q/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/26630772232"},{"id":285,"name":"Kẹp bát đĩa chống nóng Hobby KI4","drive":"https://drive.google.com/file/d/1NEYH0F_9dOXXwRKoDUusq_7Ezaq_x_1t/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/26630772232"},{"id":286,"name":"Mũi khoan Bosch Hex-9 gạch cứng","drive":"https://drive.google.com/file/d/1qhkBnGovN-AUP7a773d9gd5ZLcZc6xCC/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/25569197976"},{"id":287,"name":"Mũi khoan Bosch Hex-9 gạch cứng","drive":"https://drive.google.com/file/d/16WHLr4L7YVGOwg27ShsRQprHYB7SEagM/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/25569197976"},{"id":288,"name":"Bộ vòi xịt vệ sinh lò xo Hobby VSR2","drive":"https://drive.google.com/file/d/1umQys7XIn99BXG1q3BtEg-1-iqJXQTLd/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/14079598499"},{"id":289,"name":"Chốt cửa dây xích an toàn Hobby KLC","drive":"https://drive.google.com/file/d/1QYvA8IsUsejbb11EDcP6LJ-4QK1voSeC/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/2609898853"},{"id":290,"name":"Vòi hút nước rửa chén Hobby NRC8","drive":"https://drive.google.com/file/d/1lUueO4z-VpP6td2TUF8bARfNpAS91djj/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/25872608989"},{"id":291,"name":"Vòi hút nước rửa chén Hobby NRC8","drive":"https://drive.google.com/file/d/1d-1g7xuVRbwDdIqqK7bVyBrv0uFcXj-6/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/25872608989"},{"id":292,"name":"Xịt phòng tinh dầu sả chanh Julyhouse 50ml","drive":"https://drive.google.com/file/d/1M514jTFwvAVJ3dRxktzgTkUN8YY7cLL1/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/1639870735"},{"id":293,"name":"Xịt phòng tinh dầu sả chanh Julyhouse 50ml","drive":"https://drive.google.com/file/d/1gESj_2crTX-FhCFwoIiXWVM1Ds9Dek8V/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/1639870735"},{"id":294,"name":"Xịt phòng tinh dầu Julyhouse 280ml","drive":"https://drive.google.com/file/d/133zoB8VFvNjHPytaJsBVqNvC-ZCOwxTq/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/22189394104"},{"id":295,"name":"Tô dĩa sứ Minh Long Đồng Tâm Xanh","drive":"https://drive.google.com/file/d/1E7NUPjmIyiZj6ZAg5sXTAPR54ov7Mw6s/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1446762402"},{"id":296,"name":"Tô dĩa sứ Minh Long Đồng Tâm Xanh","drive":"https://drive.google.com/file/d/1Rds5nIgyt6B8TlQdrSOSTZ-57xWJQFvA/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/1446762402"},{"id":297,"name":"Nồi sứ dưỡng sinh Minh Long Vesta 2.0L","drive":"https://drive.google.com/file/d/1SN4-VSDDhvhT4SMxqB2CHk3AL_x5QD3E/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/25832219237"},{"id":298,"name":"Tô dĩa tròn sứ Minh Long Hoa May Mắn","drive":"https://drive.google.com/file/d/1ta9TE1krff8hKiSHg_buHPpYMznYq_fs/view?usp=drivesdk","shopee":"https://shopee.vn/product/73224788/21296491081"},{"id":299,"name":"Combo 8 móc treo đồ dán tường Hobby","drive":"https://drive.google.com/file/d/1pAzZBqDzJObRI_T0ck91JXmUc-NloqAb/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/24088513692"},{"id":300,"name":"Combo 8 móc treo đồ dán tường Hobby","drive":"https://drive.google.com/file/d/1HXKGqRnHwShwQF0VnUvEfU8RadgdCcwm/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/24088513692"},{"id":301,"name":"Xịt thơm quần áo Julyhouse 20/280ml","drive":"https://drive.google.com/file/d/1-EEPYNCghyDfR4cxUzn61By8ss6JpFrB/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24819231584"},{"id":302,"name":"Dĩa sứ Minh Long Jasmine Chỉ Xanh Lá","drive":"https://drive.google.com/file/d/1fJGYCOkxbLHmmRMoPJNZaYChd6kZbM0k/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/24364575001"},{"id":303,"name":"Ca tròn 0.35L Misc Assortment Đại Dương","drive":"https://drive.google.com/file/d/1mHCpXcobf7Bn-ZaEZMwIphMbZmicb9cj/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/42707193732"},{"id":304,"name":"Ca tròn 0.35L Misc Assortment Đại Dương","drive":"https://drive.google.com/file/d/1gAkaF6Xto3FVr049Sw_LWzh4p_-sfGvQ/view?usp=drivesdk","shopee":"https://shopee.vn/product/75810249/42707193732"},{"id":305,"name":"Chén cơm sứ Minh Long Mẫu Đơn Trắng","drive":"https://drive.google.com/file/d/1dYnMIkS7EP1kyQpP_Wz30aZWVXN8arKY/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/27107442406"},{"id":306,"name":"Khay đựng đũa muỗng Hobby KM","drive":"https://drive.google.com/file/d/1hrdRbU3TrRRmYN2x1XKi06v8sXjKsXUV/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/23133851630"},{"id":307,"name":"Khay đựng đũa muỗng Hobby KM","drive":"https://drive.google.com/file/d/12UfCQdpwG8nQ2NLBtwPrstw1Sr6DZY7C/view?usp=drivesdk","shopee":"https://shopee.vn/product/26274679/23133851630"},{"id":308,"name":"Mascara dầu dừa Julyhouse 5ml dưỡng mi","drive":"https://drive.google.com/file/d/1EbNpx9H3xd6Tj21h7LyWNMZFsOghlmUb/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/28406835444"},{"id":309,"name":"Mascara dầu dừa Julyhouse 5ml dưỡng mi","drive":"https://drive.google.com/file/d/1eJuXcr9YSalep1GKaHLhtNDQe58JfBQh/view?usp=drivesdk","shopee":"https://shopee.vn/product/91686190/28406835444"},{"id":310,"name":"Chén cơm sứ Minh Long Mẫu Đơn Trắng","drive":"https://drive.google.com/file/d/1Ax2D9Z_X030AoPbueobpcuGwC6zGP1JD/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/27107442406"},{"id":311,"name":"Chén cơm sứ Minh Long Mẫu Đơn Trắng","drive":"https://drive.google.com/file/d/1i-nqXy_qorAi61To3aio79GnqSpI0yjL/view?usp=drivesdk","shopee":"https://shopee.vn/product/156425396/27107442406"}];
+let posted = JSON.parse(localStorage.getItem('posted')||'{}');
+let history = JSON.parse(localStorage.getItem('history')||'[]');
+let current = null;
+
+/* ================= CAPTION GENERATOR ================= */
+const captionTemplates = [
+  "Săn sale chính hãng {name} giá tốt",
+  "Deal hời cực sốc {name} chính hãng",
+  "Giá rẻ bất ngờ cho {name} chính hãng",
+  "Giảm sâu số lượng có hạn {name}",
+  "Đừng bỏ lỡ {name} giá cực hời",
+  "Siêu ưu đãi {name} chính hãng hôm nay",
+  "Mua ngay {name} với giá siêu rẻ",
+  "Sản phẩm hot {name} giảm mạnh",
+  "Giá sốc hôm nay cho {name}",
+  "Mua liền tay {name} giá ưu đãi",
+  "Flash sale cực khủng cho {name} chính hãng",
+"Nhanh tay chốt đơn {name} siêu ưu đãi",
+"Mua {name} hôm nay – nhận giá hời liền tay",
+"Cơ hội vàng săn {name} chính hãng giá rẻ",
+"Chớp ngay deal ngon cho {name}",
+"Giảm sốc cực sâu {name} chính hãng hôm nay",
+"Hàng hot {name} đang giảm giá cực mạnh",
+"Đặt nhanh kẻo lỡ {name} giá tốt nhất",
+"Săn ngay {name} chính hãng – deal cực hời",
+"Giá hủy diệt cho {name} chỉ hôm nay",
+"Cực phẩm {name} chính hãng giảm đến 50%",
+"Đại tiệc sale – {name} giá rẻ không tưởng",
+"Sắm liền {name} – ưu đãi đang chờ",
+"Đặc biệt hôm nay: {name} chính hãng siêu sale",
+"Siêu phẩm {name} giá tốt nhất thị trường",
+"Chỉ hôm nay: săn {name} giá sốc không giới hạn",
+"Giảm giá cực đỉnh – {name} chính hãng chờ bạn",
+"Deal ngon bất ngờ cho {name} siêu hot",
+"Cơ hội hiếm có – {name} giá giảm cực sâu",
+"Săn ngay {name} chính hãng – giá mềm bất ngờ",
+"Bắt trend liền tay với {name} chính hãng",
+"Giá ưu đãi đặc biệt cho tín đồ săn sale {name}",
+"Giảm sâu chưa từng có – {name} chờ bạn rinh",
+"Deal ngon khó cưỡng cho {name} chính hãng",
+"Thời điểm vàng để mua {name} giá rẻ",
+"Săn ngay {name} chính hãng – càng mua càng lời",
+"Mở bán cực hot – {name} giảm giá khủng",
+"Không thể tin nổi – {name} giá thấp kỷ lục",
+"Giảm giá cực đại – cơ hội sở hữu {name}",
+"Nhanh tay đặt {name} – ưu đãi giới hạn",
+"Mua {name} hôm nay, nhận quà liền tay",
+"Ưu đãi bùng nổ cho {name} chính hãng",
+"Săn deal nửa giá cho {name} – chỉ hôm nay",
+"Giảm mạnh mừng sale – {name} giá quá hời",
+"Hàng hot {name} – giá chỉ bằng nửa thị trường",
+"Cơ hội cuối cùng sở hữu {name} giá siêu hời",
+"Siêu sale chính hãng {name} – săn ngay kẻo lỡ",
+"Giá tụt sàn cho {name} chính hãng cực chất",
+"Giảm ngay hôm nay – {name} chính hãng giá mềm",
+"Mua {name} bây giờ – nhận ưu đãi khủng liền tay",
+"Chỉ hôm nay: {name} giảm giá cực hấp dẫn",
+"Đừng chần chừ – {name} đang sale cực khủng",
+"Ưu đãi khủng nhất tháng cho {name} chính hãng",
+"Giá giảm chạm đáy – {name} hot nhất hôm nay",
+"Săn deal {name} nhanh tay kẻo hết hàng",
+"Giảm giá khủng – cơ hội sở hữu {name} chính hãng",
+"Hàng xịn {name} giá rẻ bất ngờ, mua ngay!",
+"Chớp cơ hội – {name} chính hãng đang đại hạ giá",
+"Mua liền tay {name}, ưu đãi khủng chờ bạn",
+"Giảm giá chưa từng thấy cho {name}",
+"Deal cực chất – {name} giá siêu ưu đãi",
+"Cực phẩm {name} – giá chỉ bằng 1/2 hôm nay",
+"Nhanh tay rước {name} – giá giảm cực mạnh",
+"Hạ giá toàn sàn – {name} chính hãng giảm sâu",
+"Không thể bỏ qua: {name} đang sale cháy hàng",
+"Giảm giá cực sốc, săn ngay {name} chính hãng",
+"Hàng hot {name} chính hãng, mua sớm lời to",
+"Đặt ngay {name} – deal ngon đang đợi",
+"Cực kỳ hấp dẫn – {name} giá thấp chưa từng",
+"Siêu khuyến mãi {name}, giá chỉ hôm nay thôi!",
+"Giá cực mềm cho {name} – săn ngay kẻo lỡ!",
+"Mua {name} hôm nay, tiết kiệm liền tay",
+"Hàng chính hãng {name} – deal ngon đang đợi",
+"Siêu deal nổ tung – {name} giảm giá ngập tràn",
+"Không mua hôm nay là tiếc – {name} giá rẻ bất ngờ",
+"Cơn mưa ưu đãi đổ bộ – {name} chính hãng giảm mạnh",
+"Deal cực hot – {name} chính hãng giá cực rẻ",
+"Thời gian có hạn – nhanh tay đặt {name}",
+"Săn sale sập sàn với {name} chính hãng",
+"Độc quyền hôm nay – {name} giảm giá siêu sâu",
+"Hàng hot giảm giá – {name} chính hãng giá hời",
+"Giá giảm cực mạnh – mua {name} càng sớm càng lời",
+"Rinh liền tay {name} chính hãng – siêu ưu đãi đang chờ",
+"Cơ hội có một không hai – {name} giảm khủng",
+"Giảm giá cực hot cho fan của {name}",
+"Mở sale toàn sàn – {name} chính hãng giá cực thấp",
+"Giá rẻ bất ngờ, {name} chính hãng chờ bạn săn",
+"Đặt nhanh – {name} chính hãng đang giảm cực sốc",
+"Siêu ưu đãi chỉ 24h – {name} giá hời khó tin",
+"Hàng hot nhất tuần – {name} chính hãng giảm sâu bất ngờ",
+"Săn giá hời cho {name} – cơ hội chỉ có hôm nay",
+"Chốt đơn nhanh tay, {name} đang giảm cực khủng",
+"Giá rẻ đến khó tin – {name} chính hãng đang hot",
+"Ưu đãi cực lớn – {name} chính hãng chờ bạn rước",
+"Deal khủng bất ngờ – {name} sale toàn sàn",
+"Hàng xịn {name} – mua ngay kẻo lỡ cơ hội",
+"Giảm sâu chạm đáy – {name} giá quá hời",
+"Đặt {name} ngay hôm nay, hưởng ưu đãi sốc",
+"Sản phẩm {name} đang giảm giá cực kỳ hấp dẫn",
+"Siêu sale chính hãng – {name} giá rẻ hết nấc",
+"Nhanh tay kẻo hết – {name} đang cháy hàng",
+"Giảm khủng chưa từng có – {name} hot trend 2025",
+"Deal cực hời – {name} chính hãng giá siêu tốt",
+"Giảm giá ngập tràn – {name} chính hãng đồng loạt sale",
+"Giá hời bất ngờ cho fan trung thành của {name}",
+"Mua {name} hôm nay – tiết kiệm cực lớn",
+"Ưu đãi có hạn – {name} giá tốt nhất trong năm",
+"Cực deal đang chờ – {name} giảm giá siêu sâu",
+"Cập bến kho sale – {name} chính hãng giá cực sốc",
+"Mở bát tháng mới với {name} – giá ưu đãi siêu ngon",
+"Chốt deal liền tay – {name} giá mềm chưa từng thấy",
+"Cực phẩm {name} chính hãng – giảm sâu tới bến",
+"Giá ưu đãi chạm sàn – {name} hot nhất hôm nay",
+"Sắm ngay {name}, nhận deal cực lời",
+"Đừng ngó lơ – {name} chính hãng đang giảm cực mạnh",
+"Mua {name} chính hãng hôm nay – giá giảm tới đáy",
+"Deal ngon ngất ngây – {name} giá hời siêu khủng",
+"Chương trình sốc: {name} giảm giá toàn sàn",
+"Cơn bão sale đổ bộ – {name} giá siêu rẻ",
+"Hàng hot {name} – giá cực ưu đãi chỉ trong hôm nay",
+"Cơ hội săn {name} chính hãng với giá cực lời",
+"Săn deal siêu tốc – {name} giảm đến không ngờ",
+"Mua {name} càng sớm, giá càng tốt",
+"Đại hạ giá toàn shop – {name} chính hãng siêu hot",
+"Chỉ còn vài suất ưu đãi cho {name}",
+"Mua ngay {name} – giá tốt bất ngờ đang chờ bạn",
+"Giảm giá sâu nhất tháng – {name} chính hãng siêu ưu đãi",
+"Săn deal vàng cho {name}, tiết kiệm cực lớn",
+"Đặc quyền hôm nay: {name} giảm giá cực hấp dẫn",
+"Giá ngon không tưởng – {name} chính hãng chỉ còn hôm nay",
+"Lướt thấy {name} là auto thả tim ❤️ – giá này mà không chốt thì hơi phí!",
+"Giá mềm như bánh flan 🍮 – {name} chính hãng đang chờ bạn rước!",
+"Đừng để {name} nằm giỏ quá lâu 😭 – sale xong là bay mất đó!",
+"Team săn sale đâu rồi, {name} đang xả hàng kìa 🔥",
+"Nghe nói ai chốt {name} hôm nay là hên cả tuần 😉",
+"Giảm giá sốc quá trời 😱 – {name} chính hãng rẻ như cho!",
+"Giá này không mua {name} là bỏ lỡ chân ái luôn á 😍",
+"Thề luôn, giá {name} này còn rẻ hơn ly trà sữa 🧋",
+"Chậm tay là out game 😤 – {name} chính hãng đang cháy hàng rồi!",
+"Ai chốt nhanh thì lời, ai chần chừ là tiếc 😆 – {name} siêu ưu đãi!",
+"Sale to bằng cái trời 🌤 – {name} chính hãng hạ giá cực mạnh!",
+"Deal ngon hơn người yêu cũ 💔 – {name} giá siêu hời luôn nha!",
+"Không tin nổi luôn 😱 – {name} giảm sâu hơn cả lòng đại dương!",
+"Cảnh báo: {name} đang hot, xem xong là auto muốn mua 😜",
+"Vừa đẹp, vừa rẻ, lại chính hãng – {name} chứ còn ai!",
+"Bấm vào xem thử thôi mà lỡ tay chốt {name} luôn 😅",
+"Mấy anh chị ơi, {name} giảm sốc quá, chậm tay là mất tiêu 🏃‍♀️",
+"Cảnh báo ví mỏng 💸 – {name} giá hời quá khó cưỡng!",
+"Mua {name} hôm nay, mai khỏi hối hận 😎",
+"Giảm giá thật hay mơ vậy trời 😍 – {name} chính hãng siêu rẻ luôn!",
+"Lướt Shopee thấy {name} giảm giá mà tim muốn rớt luôn 😍",
+"Ai đang on Shopee mà chưa chốt {name} là bỏ lỡ deal ngon nha 😜",
+"Mấy chị em ơi, Shopee báo tin vui nè – {name} đang sale siêu to khổng lồ 🎉",
+"Đang tám trên Shopee mà thấy giá {name} vậy là phải dừng tám để chốt đơn liền 🤭",
+"Hàng chính hãng {name} đang hot rần rần trên Shopee luôn đó 🔥",
+"Shopee réo tên bạn rồi kìa 😆 – {name} đang giảm giá cực hời!",
+"Coi chừng lướt Shopee xong auto nghèo vì {name} rẻ quá 😂",
+"Deal nóng hổi vừa thổi vừa mua 😍 – {name} chính hãng trên Shopee",
+"Bỏ qua {name} hôm nay, mai lên Shopee lại tiếc đứt ruột 😭",
+"Ai đang Shopee rảnh tay thì ghé liền, {name} đang sale shock kìa 🔥",
+"Báo động đỏ trên Shopee 🚨 – {name} giảm giá cực mạnh!",
+"Shopee hôm nay nhộn nhịp quá trời, {name} cháy đơn rồi kìa 💥",
+"Không nói nhiều, deal {name} này Shopee phải gọi là ‘đỉnh của chóp’ 🤩",
+"Tag ngay người yêu Shopee vào xem {name}, giá ngon quá nè 😆",
+"Shopee sáng nay toàn thấy người ta khoe chốt {name} 😭 mình chưa kịp mua!",
+"Shopee thông báo: {name} vừa cập bến sale siêu hot 🔥",
+"Cứ mở Shopee là thấy deal ngon – đặc biệt là {name} này luôn nha 💙",
+"Thời tiết nóng mà deal Shopee còn nóng hơn 🥵 – {name} chính hãng giảm cực sâu!",
+"Mấy bạn Shopee đừng ngủ quên, {name} đang cháy hàng rồi đó 🏃‍♀️",
+"Không đùa đâu nha, {name} đang là top trending Shopee luôn á 😍",
+"Trời ơi, hàng {name} em mới về, đẹp xuất sắc luôn 🥰 ai chốt trước em để riêng nè!",
+"Không dám nói quá chứ {name} lần này hot thiệt sự 🔥 chậm tay là hết hàng nha!",
+"Em nói thật, giá {name} này mà không mua là uổng lắm luôn á 😭",
+"Mấy chị ơi, {name} chính hãng em đang sale nè, giá hời quá trời luôn 😍",
+"Tay em run khi thấy giá {name} luôn 🥲 – quá rẻ, chốt nhanh kẻo hết!",
+"Còn đúng vài món {name} thôi đó nha 😭 ai thương thì chốt liền tay giúp em!",
+"Khách quen Shopee nhà em hôm nay ai cũng chốt {name}, còn chị chưa chốt là thiệt đó 😆",
+"Hàng xịn {name} mà giá thì dễ thương lắm nè 💕 nhắn em liền để em giữ cho nha!",
+"Em không nói nhiều, {name} giảm giá thật rồi nha 😱 ai tin nhắn đầu tiên là có deal tốt nhất!",
+"Ai hỏi hoài {name} đâu thì nay em báo tin vui nè 🎉 – hàng về full mẫu luôn!",
+"Chốt {name} sớm đi mấy chị, mai em hết hàng là tiếc lắm đó 😅",
+"Em nói thiệt, deal {name} này ngon hơn người yêu cũ 😜",
+"Shopee nhà em đang cháy đơn vì {name} đó nha, ai chưa chốt thì lẹ lên 💨",
+"Cả Shopee nhà em đang nhộn nhịp vì {name}, ai chưa có là lạc hậu liền 😆",
+"Hàng chính hãng {name}, giá em thương lắm 🥹 chốt sớm em free ship cho luôn!",
+"Mấy anh chị đừng lướt qua, {name} đang sale hời lắm á 😍",
+"Hôm nay em mood đẹp nên giảm thêm cho ai chốt {name} sớm nha 😘",
+"Chỉ còn vài chiếc {name} cuối cùng thôi đó 😭 – ai cần em giữ giùm liền!",
+"Em vừa khui thùng {name}, mùi hàng mới thơm phức luôn 😆 ai chốt thì em quay video gửi liền!",
+"Cảnh báo: {name} nhà em đang cháy đơn 🔥 – ai lỡ tay chậm là đợi chuyến sau luôn nha!",
+"Đừng lướt nữa 😤 – quay lại chốt {name} liền, kẻo mai hết em không cứu được đâu nha!",
+"Cảnh báo cháy đơn 🔥 – ai chưa chốt {name} là auto tiếc luôn á!",
+"Giá này mà không chốt là giận đó nha 😭 – em nói thiệt luôn á!",
+"Mấy anh chị ơi, {name} đang hot hòn họt nè 🔥 chốt nhanh kẻo trễ!",
+"Còn đúng 5 cái {name} thôi đó 😱 – em không dọa đâu, thật luôn á!",
+"Chốt liền tay đi, deal {name} này không lặp lại lần 2 đâu 😜",
+"Em không nói nhiều đâu, ai chốt sớm là lời to luôn 💰",
+"Mấy chị mà lăn tăn là mất liền á 😭 – {name} đang cháy hàng thật sự!",
+"Ai đọc tới đây mà chưa chốt {name} thì gan thiệt đó 😆",
+"Chốt lẹ đi nè, lát em khóa đơn rồi khỏi kêu em giữ nha 😏",
+"Thề luôn, ai chốt {name} hôm nay là lời gấp đôi mai luôn 😎",
+"Không chốt bây giờ, lát thấy 'hết hàng' lại khóc ròng đó 🥹",
+"Nhanh tay kẻo bay, {name} bên em chạy đơn như bay luôn 🚀",
+"Em đang gói hàng {name} mỏi tay luôn 😅 – ai chưa có thì chốt lẹ em giữ cho nha!",
+"Ai chốt đầu tiên em tặng thêm quà xịn luôn 🎁 – nhanh tay nào!",
+"Chốt liền đừng nghĩ nhiều – {name} hot vậy không mua thì tiếc đó 😍",
+"Đừng chờ mai, {name} hôm nay sale cực khủng 😭 – mai là giá khác liền!",
+"Inbox em liền tay nha 💬 – chậm là khỏi còn {name} mà chốt luôn á!",
+"Chốt lẹ giúp em, {name} này bán nhanh như bánh mì nóng luôn 🥐",
+"Chốt càng nhanh, giá càng mềm nha 😜 – {name} chính hãng xịn khỏi bàn!",
+"Còn đúng vài món {name} cuối cùng thôi nha 😭 – ai chưa chốt là mai khóc thật đó!",
+"Đang gói đơn mà tay run luôn 🫣 – {name} bán nhanh quá trời ơi!",
+"Mấy anh chị đừng lăn tăn nữa, {name} này mà hết em không biết tìm đâu ra luôn 😭",
+"Chốt lẹ kẻo hối hận, {name} bên em trôi nhanh hơn người yêu cũ 💨",
+"Thề luôn, deal {name} này không chốt là ngủ cũng thấy tiếc 😅",
+"Em cảnh báo trước rồi nha 😆 – {name} sắp cháy hàng thật sự đó!",
+"Ai đọc tới đây mà chưa nhắn em chốt {name} là gan to dữ luôn 😜",
+"Chốt lẹ đi mấy chị ơi, lát em off Shopee là hết sạch luôn đó 😭",
+"Giá này em mà không đăng sớm là bị khách la 😭 – {name} rẻ bất ngờ luôn!",
+"Mấy đơn {name} bay vèo vèo 🚀 – ai chưa chốt là trễ chuyến nha!",
+"Ai chốt nhanh em thương, em tặng thêm món nhỏ xinh luôn 🎁",
+"Đừng để em phải nhắn lại 'hết hàng rồi nha' 😢 – {name} sắp bay hết!",
+"Em nói nhỏ thôi 🤫 – {name} hôm nay sale bí mật, chốt nhanh mới kịp!",
+"Không nói nhiều, giá {name} này chỉ có hôm nay – mai là hết sạch 😭",
+"Ai chốt trước em ship trước nha 🚚 – chậm tay là phải đợi đợt sau luôn đó!",
+"Chốt liền tay đi mấy chị ơi 😍 – hàng xịn, giá rẻ, em nói thiệt luôn á!",
+"Đơn {name} chạy nhanh như tin đồn luôn 😆 – ai chưa chốt là mất liền nha!",
+"Inbox em lẹ kẻo trễ 💬 – {name} đang cháy hàng quá trời luôn!",
+"Giá này mà không chốt là em dỗi luôn á 😤",
+"Nhanh tay giúp em chốt đơn nha 😘 – {name} hôm nay hot quá trời luôn!"
+];
+
+const hashtagPool = [
+  "#KOLUytin",
+  "#HangMoiVe",
+  "#Shopxuhuong",
+  "#LuotVuiMuaLien",
+  "#VideohangTieudung",
+  "#VideohangDoisong",
+  "#VideohangGiadung",
+  "#VideohangMypham",
+  "#VideohangLamdep",
+  "#sandealcungkol",
+  "#KOLreview",
+  "#ShopeeVideo",
+  "#ShopeeCreator",
+  "#VideoReview",
+  "#SanSale",
+  "#DealHot",
+  "#GiaTot"
+];
+
+function rand(arr){return arr[Math.floor(Math.random()*arr.length)]}
+function randHashtags(n=3){
+  const pool=[...hashtagPool], out=[];
+  while(out.length<n && pool.length){
+    out.push(pool.splice(Math.floor(Math.random()*pool.length),1)[0]);
+  }
+  return out.join(" ");
+}
+function generateCaption(name){
+  return rand(captionTemplates).replace("{name}",name) + " " + randHashtags(3);
+}
+
+/* ================= MOBILE SAFE COPY ================= */
+function copyToClipboard(text){
+  if(!text) return false;
+  try{
+    const ta=document.createElement("textarea");
+    ta.value=text;
+    ta.style.position="fixed";
+    ta.style.top="0";
+    ta.style.left="0";
+    ta.style.opacity="0";
+    document.body.appendChild(ta);
+    ta.focus();
+    ta.select();
+    ta.setSelectionRange(0,ta.value.length);
+    const ok=document.execCommand("copy");
+    document.body.removeChild(ta);
+    return ok;
+  }catch(e){
+    console.error("COPY FAIL",e);
+    return false;
+  }
+}
+
+/* ================= UI ================= */
+const rowsEl=document.getElementById("rows");
+const summary=document.getElementById("summary");
+const currentName=document.getElementById("currentName");
+const captionText=document.getElementById("captionText");
+
+function save(){
+  localStorage.setItem("posted",JSON.stringify(posted));
+  localStorage.setItem("history",JSON.stringify(history));
+}
+
+function updateSummary(){
+  summary.textContent=
+    "ĐÃ ĐĂNG "+
+    Object.keys(posted).filter(i=>posted[i]).length+
+    "/"+PRODUCTS.length+" SẢN PHẨM";
+}
+
+function render(){
+  rowsEl.innerHTML="";
+  const q=document.getElementById("search").value.toLowerCase();
+  PRODUCTS
+    .filter(p=>!q||p.name.toLowerCase().includes(q)||("#"+p.id)===q)
+    .forEach(p=>{
+      const tr=document.createElement("tr");
+      tr.innerHTML=`
+        <td><div class="dot ${posted[p.id]?'posted':''}"></div></td>
+        <td>#${p.id}</td>
+        <td>${p.name}</td>
+        <td class="actions">
+          <button class="blue" onclick="show(${p.id})">Hiển thị</button>
+          <button class="blue" onclick="unmark(${p.id})">Đánh dấu chưa đăng</button>
+        </td>`;
+      rowsEl.appendChild(tr);
+    });
+}
+
+function show(id){
+  const p=PRODUCTS.find(x=>x.id===id);
+  current=id;
+  currentName.textContent="Sản phẩm "+id;
+  captionText.value=generateCaption(p.name);
+  history.unshift("Hiển thị SP "+id);
+  save();render();
+}
+
+function unmark(id){
+  posted[id]=false;
+  save();render();updateSummary();
+}
+
+/* ================= EVENTS ================= */
+document.getElementById("randomBtn").onclick=()=>{
+  const list=PRODUCTS.filter(p=>!posted[p.id]);
+  const src=list.length?list:PRODUCTS;
+  show(src[Math.floor(Math.random()*src.length)].id);
+};
+
+document.getElementById("copyVideo").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  copyToClipboard(p.drive);
+  posted[current]=true;
+  updateSummary();save();
+};
+
+document.getElementById("copyShopee").onclick=()=>{
+  if(!current)return;
+  copyToClipboard(PRODUCTS.find(p=>p.id===current).shopee);
+};
+
+document.getElementById("copyCaption").onclick=()=>{
+  if(!current)return;
+  const p=PRODUCTS.find(x=>x.id===current);
+  const cap=generateCaption(p.name);
+  captionText.value=cap;
+  copyToClipboard(cap);
+};
+
+document.getElementById("toggleCaption").onclick=()=>captionBox.classList.toggle("hidden");
+document.getElementById("toggleHistory").onclick=()=>historyBox.classList.toggle("hidden");
+document.getElementById("clearHistory").onclick=()=>{
+  history=[];posted={};
+  save();render();updateSummary();
+};
+
+document.getElementById("search").oninput=render;
+
+updateSummary();render();
+</script>
+
+</body>
+</html>
